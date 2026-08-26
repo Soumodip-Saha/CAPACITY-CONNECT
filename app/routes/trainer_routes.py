@@ -177,7 +177,8 @@ def add_module(request: Request, course_id: int, title: str = Form(...), summary
     with get_db() as db:
         cursor = db.cursor()
         cursor.execute("SELECT COALESCE(MAX(order_num), 0) + 1 FROM course_modules WHERE course_id = ?", (course_id,))
-        next_order = cursor.fetchone()[0]
+        res = cursor.fetchone()
+    next_order = next(iter(res.values())) if isinstance(res, dict) else (res[0] if res else 1)
 
         cursor.execute("""
             INSERT INTO course_modules (course_id, title, order_num, summary)
@@ -201,7 +202,8 @@ def add_lesson(
     with get_db() as db:
         cursor = db.cursor()
         cursor.execute("SELECT COALESCE(MAX(order_num), 0) + 1 FROM course_lessons WHERE module_id = ?", (module_id,))
-        next_order = cursor.fetchone()[0]
+        res = cursor.fetchone()
+    next_order = next(iter(res.values())) if isinstance(res, dict) else (res[0] if res else 1)
 
         cursor.execute("""
             INSERT INTO course_lessons (module_id, course_id, title, lesson_type, content_url, duration_mins, notes, order_num)
