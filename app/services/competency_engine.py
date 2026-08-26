@@ -73,9 +73,9 @@ def calculate_trainer_competency(
             else:
                 exp_score = max(0.0, (exp / max(1, min_experience)) * 8.0)
 
-            # 4. Feedback & Track record score (max 10 points)
-            avg_rating = t.get("avg_rating") or 4.5
-            rating_score = (avg_rating / 5.0) * 10.0
+           # 4. Feedback & Track record score (max 10 points)
+        avg_rating = float(t.get("avg_rating") or 4.5)
+        rating_score = (avg_rating / 5.0) * 10.0
 
             total_score = round(min(100.0, skill_score + domain_score + exp_score + rating_score), 1)
 
