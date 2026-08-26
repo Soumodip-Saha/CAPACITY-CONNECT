@@ -1,0 +1,123 @@
+{% extends "base.html" %}
+
+{% block title %}Official Certificate - {{ certificate.certificate_id }} - MoES / IMD{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto px-4 py-8 space-y-6">
+    
+    <!-- Action Bar (Non-Printable) -->
+    <div class="flex justify-between items-center bg-white p-4 rounded-2xl border border-slate-200 shadow-sm print:hidden">
+        <a href="/trainee/dashboard" class="text-xs font-bold text-slate-600 hover:text-slate-900 flex items-center gap-1.5">
+            <i data-lucide="arrow-left" class="w-4 h-4"></i> Back to Dashboard
+        </a>
+        <div class="flex items-center gap-2">
+            <button onclick="window.print()" class="px-5 py-2.5 bg-sky-600 hover:bg-sky-500 text-white text-xs font-bold rounded-xl shadow transition flex items-center gap-2">
+                <i data-lucide="printer" class="w-4 h-4"></i> Print Certificate
+            </button>
+        </div>
+    </div>
+
+    <!-- Official Government Certificate Document -->
+    <div class="bg-white p-8 sm:p-14 rounded-3xl border-8 border-double border-amber-600/80 shadow-2xl relative overflow-hidden certificate-printable" id="certificateNode">
+        
+        <!-- Watermark Background -->
+        <div class="absolute inset-0 flex items-center justify-center opacity-5 pointer-events-none">
+            <i data-lucide="satellite" class="w-96 h-96 text-slate-900"></i>
+        </div>
+
+        <div class="relative z-10 text-center space-y-6">
+            
+            <!-- Government Header Insignia -->
+            <div class="space-y-1">
+                <p class="text-xs uppercase font-bold tracking-widest text-slate-500">Government of India &bull; भारत सरकार</p>
+                <h2 class="text-base sm:text-lg font-black tracking-wider text-slate-900 uppercase">Ministry of Earth Sciences</h2>
+                <h3 class="text-sm font-bold text-sky-800 uppercase tracking-wide">India Meteorological Department (IMD)</h3>
+                <p class="text-[11px] text-amber-700 italic font-serif">"आदित्यात् जायते वृष्टिः" &bull; Training & Capacity Building Directorate</p>
+            </div>
+
+            <div class="w-24 h-1 bg-gradient-to-r from-orange-500 via-amber-500 to-green-600 mx-auto rounded-full"></div>
+
+            <!-- Certificate Title -->
+            <div class="py-2">
+                <h1 class="text-2xl sm:text-4xl font-serif font-black text-slate-900 tracking-wide uppercase">
+                    Certificate of Competency
+                </h1>
+                <p class="text-xs text-slate-500 mt-1 uppercase tracking-widest font-sans">This is to certify that</p>
+            </div>
+
+            <!-- Recipient Name -->
+            <div class="py-2">
+                <div class="text-2xl sm:text-3xl font-serif font-black text-sky-950 underline decoration-amber-500 decoration-2 underline-offset-8">
+                    {{ certificate.trainee_name }}
+                </div>
+                <p class="text-xs text-slate-600 mt-3 font-medium">
+                    {{ certificate.trainee_designation or "Meteorological Officer" }}, {{ certificate.trainee_department or "India Meteorological Department" }}
+                </p>
+            </div>
+
+            <p class="text-xs sm:text-sm text-slate-700 max-w-2xl mx-auto leading-relaxed font-serif">
+                has successfully completed the comprehensive operational training program and demonstrated distinguished proficiency in the specialized capacity-building curriculum titled:
+            </p>
+
+            <!-- Course Title Highlight -->
+            <div class="bg-gradient-to-r from-sky-50 via-amber-50 to-sky-50 py-3 px-6 rounded-2xl border border-amber-200/80 max-w-2xl mx-auto">
+                <h4 class="text-base sm:text-lg font-bold text-slate-900">
+                    {{ certificate.course_title }}
+                </h4>
+                <p class="text-xs font-mono text-slate-500 mt-0.5">
+                    Course Code: {{ certificate.course_code }} &bull; Domain: {{ certificate.course_domain }} ({{ certificate.duration_hours }} Hours)
+                </p>
+            </div>
+
+            <!-- Performance Metrics -->
+            <div class="flex justify-center items-center gap-8 text-xs py-2">
+                <div>
+                    <span class="text-slate-400 block text-[10px] uppercase">Grade Awarded</span>
+                    <strong class="text-emerald-700 text-sm font-bold">{{ certificate.grade }}</strong>
+                </div>
+                <div class="h-6 w-px bg-slate-200"></div>
+                <div>
+                    <span class="text-slate-400 block text-[10px] uppercase">Assessment Score</span>
+                    <strong class="text-slate-900 text-sm font-bold">{{ certificate.score_percentage }}%</strong>
+                </div>
+                <div class="h-6 w-px bg-slate-200"></div>
+                <div>
+                    <span class="text-slate-400 block text-[10px] uppercase">Date of Issue</span>
+                    <strong class="text-slate-900 text-sm font-bold">{{ certificate.issue_date }}</strong>
+                </div>
+            </div>
+
+            <!-- Signatures & QR Code Section -->
+            <div class="pt-8 border-t border-slate-200 grid grid-cols-3 gap-4 items-end text-center">
+                
+                <!-- Left Signature -->
+                <div class="space-y-1">
+                    <div class="font-serif italic text-slate-700 text-xs">Dr. Madhavan Sharma</div>
+                    <div class="w-32 h-px bg-slate-400 mx-auto"></div>
+                    <div class="text-[10px] font-bold text-slate-800 uppercase">Lead Course Instructor</div>
+                    <div class="text-[9px] text-slate-500">Scientist-G, IMD</div>
+                </div>
+
+                <!-- Center QR Code -->
+                <div class="flex flex-col items-center justify-center space-y-1">
+                    <!-- SVG Dynamic QR Representation -->
+                    <div class="p-2 bg-white border border-slate-300 rounded-xl shadow-sm">
+                        <img src="https://api.qrserver.com/v1/create-qr-code/?size=90x90&data={{ certificate.qr_data|urlencode }}" alt="Verification QR" class="w-16 h-16 sm:w-20 sm:h-20">
+                    </div>
+                    <span class="text-[9px] font-mono text-slate-600 font-bold uppercase tracking-wider">{{ certificate.certificate_id }}</span>
+                    <a href="/verify/certificate/{{ certificate.certificate_id }}" target="_blank" class="text-[9px] text-sky-700 hover:underline">Scan to Verify Authenticity</a>
+                </div>
+
+                <!-- Right Signature -->
+                <div class="space-y-1">
+                    <div class="font-serif italic text-slate-700 text-xs">Dr. Rajeshwar Rao</div>
+                    <div class="w-32 h-px bg-slate-400 mx-auto"></div>
+                    <div class="text-[10px] font-bold text-slate-800 uppercase">Director of Capacity Building</div>
+                    <div class="text-[9px] text-slate-500">Ministry of Earth Sciences</div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+{% endblock %}

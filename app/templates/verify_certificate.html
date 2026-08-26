@@ -1,0 +1,102 @@
+{% extends "base.html" %}
+
+{% block title %}Verify Certificate - MoES / IMD CAPACITY CONNECT{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto px-4 py-12">
+    <div class="text-center mb-8">
+        <span class="bg-sky-100 text-sky-800 text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wider">
+            Official Credential Verification
+        </span>
+        <h1 class="text-3xl font-black text-slate-900 mt-2">Ministry of Earth Sciences / IMD Certificate Validator</h1>
+        <p class="text-sm text-slate-500 mt-1">Verify authenticity of digital capacity building certificates issued by the MoES Training Directorate</p>
+    </div>
+
+    <!-- Search Form -->
+    <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm mb-8">
+        <form action="" method="get" class="flex flex-col sm:flex-row gap-3">
+            <div class="relative flex-1">
+                <i data-lucide="search" class="w-5 h-5 text-slate-400 absolute left-3 top-3.5"></i>
+                <input type="text" id="certInput" placeholder="Enter Certificate ID (e.g. IMD-CB-2026-8921)" value="{{ cert_id }}" class="w-full pl-10 pr-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-sky-500 focus:outline-none font-mono text-sm uppercase">
+            </div>
+            <button type="button" onclick="searchCert()" class="px-6 py-3 bg-sky-600 hover:bg-sky-500 text-white font-bold rounded-xl shadow transition flex items-center justify-center gap-2">
+                <i data-lucide="shield-check" class="w-5 h-5"></i> Verify Certificate
+            </button>
+        </form>
+    </div>
+
+    {% if is_valid and certificate %}
+        <!-- Verified Certificate Card -->
+        <div class="bg-white rounded-3xl border-2 border-emerald-500/40 p-8 shadow-xl relative overflow-hidden animate-fade-in">
+            <div class="absolute top-0 right-0 bg-emerald-500 text-white text-xs font-bold px-6 py-1.5 rounded-bl-2xl shadow-md flex items-center gap-1.5">
+                <i data-lucide="check-check" class="w-4 h-4"></i> VERIFIED AUTHENTIC
+            </div>
+
+            <div class="flex items-start gap-5 mb-6">
+                <div class="w-16 h-16 rounded-2xl bg-emerald-100 text-emerald-700 flex items-center justify-center shrink-0">
+                    <i data-lucide="award" class="w-8 h-8"></i>
+                </div>
+                <div>
+                    <h2 class="text-2xl font-black text-slate-900">{{ certificate.trainee_name }}</h2>
+                    <p class="text-sm text-slate-600">{{ certificate.trainee_designation }} &bull; {{ certificate.trainee_department }}</p>
+                    <p class="text-xs font-mono text-emerald-700 font-bold mt-1">Certificate ID: {{ certificate.certificate_id }}</p>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 bg-slate-50 p-5 rounded-2xl border border-slate-200 text-xs mb-6">
+                <div>
+                    <span class="text-slate-400 block font-medium">Program Title</span>
+                    <strong class="text-slate-900 text-sm">{{ certificate.course_title }}</strong>
+                </div>
+                <div>
+                    <span class="text-slate-400 block font-medium">Course Code & Domain</span>
+                    <strong class="text-slate-900 text-sm">{{ certificate.course_code }} ({{ certificate.course_domain }})</strong>
+                </div>
+                <div>
+                    <span class="text-slate-400 block font-medium">Issue Date</span>
+                    <strong class="text-slate-900">{{ certificate.issue_date }}</strong>
+                </div>
+                <div>
+                    <span class="text-slate-400 block font-medium">Grade & Assessment Score</span>
+                    <strong class="text-emerald-700 font-bold">{{ certificate.grade }} ({{ certificate.score_percentage }}%)</strong>
+                </div>
+                <div>
+                    <span class="text-slate-400 block font-medium">Lead Instructor</span>
+                    <strong class="text-slate-900">{{ certificate.trainer_name or "MoES Certified Trainer" }}</strong>
+                </div>
+                <div>
+                    <span class="text-slate-400 block font-medium">Issuing Authority</span>
+                    <strong class="text-slate-900">MoES / IMD Capacity Building Directorate</strong>
+                </div>
+            </div>
+
+            <div class="flex flex-wrap justify-between items-center gap-4 pt-4 border-t border-slate-100">
+                <div class="text-[11px] text-slate-400">
+                    Cryptographic Signature Validated &bull; Timestamped on Government Record
+                </div>
+                <a href="/trainee/certificate/{{ certificate.certificate_id }}" class="px-5 py-2.5 bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold rounded-xl shadow transition flex items-center gap-2">
+                    <i data-lucide="eye" class="w-4 h-4"></i> View Official Certificate Document
+                </a>
+            </div>
+        </div>
+    {% elif cert_id %}
+        <!-- Invalid Record -->
+        <div class="bg-rose-50 border border-rose-200 rounded-2xl p-8 text-center text-rose-800">
+            <i data-lucide="alert-circle" class="w-12 h-12 text-rose-500 mx-auto mb-3"></i>
+            <h3 class="text-lg font-bold">Certificate Record Not Found</h3>
+            <p class="text-xs text-rose-600 mt-1 max-w-md mx-auto">
+                No verified capacity building certificate was found matching the identifier <strong class="font-mono">{{ cert_id }}</strong>. Please check the spelling or contact the MoES Capacity Building Directorate.
+            </p>
+        </div>
+    {% endif %}
+</div>
+
+<script>
+function searchCert() {
+    const val = document.getElementById('certInput').value.trim();
+    if (val) {
+        window.location.href = '/verify/certificate/' + encodeURIComponent(val);
+    }
+}
+</script>
+{% endblock %}

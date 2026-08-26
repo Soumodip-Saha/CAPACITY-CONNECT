@@ -1,0 +1,106 @@
+{% extends "base.html" %}
+
+{% block title %}Timed Assessment: {{ quiz.title }} - CAPACITY CONNECT{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto px-4 py-8 space-y-6">
+    
+    <!-- Assessment Banner with Timer -->
+    <div class="bg-gradient-to-r from-moes-navy via-slate-900 to-sky-950 text-white p-6 rounded-3xl shadow-xl border border-sky-800/50 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 sticky top-20 z-30 backdrop-blur-md">
+        <div>
+            <span class="bg-emerald-500/20 text-emerald-300 text-[10px] font-bold px-2.5 py-0.5 rounded-full border border-emerald-500/30 uppercase">Live MCQ Assessment</span>
+            <h1 class="text-xl font-bold text-white mt-1">{{ quiz.title }}</h1>
+            <p class="text-xs text-slate-300">{{ quiz.course_title }} &bull; Passing mark: {{ quiz.pass_percentage }}%</p>
+        </div>
+
+        <!-- Live Countdown Timer -->
+        <div class="flex items-center gap-3 bg-slate-900/90 border border-slate-700 px-4 py-2 rounded-2xl shadow-inner">
+            <i data-lucide="timer" class="w-6 h-6 text-amber-400 animate-pulse"></i>
+            <div>
+                <div class="text-[10px] text-slate-400 font-bold uppercase">Time Remaining</div>
+                <div id="timerClock" class="font-mono text-xl font-black text-amber-400">20:00</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Assessment Form -->
+    <form id="quizForm" action="/trainee/assessment/{{ quiz.id }}/submit" method="post" class="space-y-6">
+        
+        {% for q in questions %}
+            <div class="bg-white p-6 sm:p-8 rounded-3xl border border-slate-200 shadow-sm space-y-4 question-card" id="q_card_{{ loop.index }}">
+                <div class="flex justify-between items-start gap-4">
+                    <span class="w-8 h-8 rounded-xl bg-sky-100 text-sky-800 font-black text-xs flex items-center justify-center shrink-0">
+                        {{ loop.index }}
+                    </span>
+                    <p class="text-sm font-bold text-slate-900 leading-relaxed flex-1">
+                        {{ q.question_text }}
+                    </p>
+                    <span class="text-[10px] text-slate-400 font-mono shrink-0">{{ q.marks }} Mark</span>
+                </div>
+
+                <!-- 4 Radio Options -->
+                <div class="space-y-2.5 pt-2 pl-12">
+                    <label class="flex items-center p-3 rounded-2xl border border-slate-200 hover:bg-sky-50/50 hover:border-sky-300 cursor-pointer transition has-[:checked]:border-sky-600 has-[:checked]:bg-sky-50">
+                        <input type="radio" name="question_{{ q.id }}" value="A" class="w-4 h-4 text-sky-600 focus:ring-sky-500 mr-3">
+                        <span class="text-xs font-semibold text-slate-800">A) {{ q.option_a }}</span>
+                    </label>
+
+                    <label class="flex items-center p-3 rounded-2xl border border-slate-200 hover:bg-sky-50/50 hover:border-sky-300 cursor-pointer transition has-[:checked]:border-sky-600 has-[:checked]:bg-sky-50">
+                        <input type="radio" name="question_{{ q.id }}" value="B" class="w-4 h-4 text-sky-600 focus:ring-sky-500 mr-3">
+                        <span class="text-xs font-semibold text-slate-800">B) {{ q.option_b }}</span>
+                    </label>
+
+                    {% if q.option_c %}
+                        <label class="flex items-center p-3 rounded-2xl border border-slate-200 hover:bg-sky-50/50 hover:border-sky-300 cursor-pointer transition has-[:checked]:border-sky-600 has-[:checked]:bg-sky-50">
+                            <input type="radio" name="question_{{ q.id }}" value="C" class="w-4 h-4 text-sky-600 focus:ring-sky-500 mr-3">
+                            <span class="text-xs font-semibold text-slate-800">C) {{ q.option_c }}</span>
+                        </label>
+                    {% endif %}
+
+                    {% if q.option_d %}
+                        <label class="flex items-center p-3 rounded-2xl border border-slate-200 hover:bg-sky-50/50 hover:border-sky-300 cursor-pointer transition has-[:checked]:border-sky-600 has-[:checked]:bg-sky-50">
+                            <input type="radio" name="question_{{ q.id }}" value="D" class="w-4 h-4 text-sky-600 focus:ring-sky-500 mr-3">
+                            <span class="text-xs font-semibold text-slate-800">D) {{ q.option_d }}</span>
+                        </label>
+                    {% endif %}
+                </div>
+            </div>
+        {% endfor %}
+
+        <!-- Bottom Submit Strip -->
+        <div class="bg-white p-6 rounded-3xl border border-slate-200 shadow-lg flex flex-col sm:flex-row justify-between items-center gap-4">
+            <div class="text-xs text-slate-500">
+                Please verify all answered questions before submitting. Passing threshold: <strong>{{ quiz.pass_percentage }}%</strong>.
+            </div>
+            <button type="submit" onclick="return confirm('Are you sure you want to submit your assessment answers now?')" class="px-8 py-3.5 bg-gradient-to-r from-emerald-600 to-teal-700 hover:from-emerald-500 hover:to-teal-600 text-white font-bold rounded-2xl shadow-lg shadow-emerald-600/30 transition text-sm flex items-center gap-2">
+                <i data-lucide="send" class="w-4 h-4"></i> Submit Final Assessment
+            </button>
+        </div>
+    </form>
+</div>
+
+<script>
+// Timer Countdown
+let durationMinutes = {{ quiz.duration_mins or 20 }};
+let totalSeconds = durationMinutes * 60;
+const timerEl = document.getElementById('timerClock');
+
+const countdown = setInterval(() => {
+    totalSeconds--;
+    if (totalSeconds <= 0) {
+        clearInterval(countdown);
+        alert('Time has expired! Submitting your answers automatically.');
+        document.getElementById('quizForm').submit();
+        return;
+    }
+    const mins = Math.floor(totalSeconds / 60);
+    const secs = totalSeconds % 60;
+    timerEl.textContent = `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+    
+    if (totalSeconds < 120) {
+        timerEl.classList.remove('text-amber-400');
+        timerEl.classList.add('text-rose-400');
+    }
+}, 1000);
+</script>
+{% endblock %}

@@ -1,0 +1,218 @@
+{% extends "base.html" %}
+
+{% block title %}Trainee Dashboard - MoES / IMD CAPACITY CONNECT{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
+    
+    <!-- Welcome Header -->
+    <div class="bg-gradient-to-r from-moes-navy via-slate-900 to-sky-900 rounded-3xl p-6 sm:p-8 text-white shadow-xl relative overflow-hidden">
+        <div class="relative z-10 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+            <div>
+                <div class="flex items-center gap-2 mb-2">
+                    <span class="bg-sky-500/20 text-sky-300 text-xs px-2.5 py-0.5 rounded-full font-bold border border-sky-400/30">Trainee Learning Suite</span>
+                    <span class="text-xs text-slate-400">{{ user.department }}</span>
+                </div>
+                <h1 class="text-2xl sm:text-3xl font-black tracking-tight">Welcome back, {{ user.full_name }}!</h1>
+                <p class="text-xs sm:text-sm text-slate-300 mt-1">{{ user.designation }} &bull; Atmospheric & Earth Sciences Capacity Track</p>
+            </div>
+            <div class="flex items-center gap-3">
+                <a href="/trainee/profile" class="px-4 py-2.5 bg-slate-800/80 hover:bg-slate-700 text-white rounded-xl text-xs font-bold border border-slate-700 transition flex items-center gap-1.5">
+                    <i data-lucide="user-check" class="w-4 h-4 text-sky-400"></i> My Profile & Skills
+                </a>
+                <a href="/trainee/courses" class="px-4 py-2.5 bg-sky-600 hover:bg-sky-500 text-white rounded-xl text-xs font-bold shadow transition flex items-center gap-1.5">
+                    <i data-lucide="plus-circle" class="w-4 h-4"></i> Browse New Courses
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Stats -->
+    <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
+            <div class="text-xs text-slate-500 font-medium mb-1">Enrolled Courses</div>
+            <div class="text-2xl font-black text-slate-900">{{ enrollments|length }}</div>
+            <div class="text-[11px] text-sky-600 mt-1 font-semibold">Active learning pathways</div>
+        </div>
+
+        <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
+            <div class="text-xs text-slate-500 font-medium mb-1">Certificates Earned</div>
+            <div class="text-2xl font-black text-amber-600">{{ certificates|length }}</div>
+            <div class="text-[11px] text-amber-700 mt-1 font-semibold">Official MoES Credentials</div>
+        </div>
+
+        <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
+            <div class="text-xs text-slate-500 font-medium mb-1">Quizzes Available</div>
+            <div class="text-2xl font-black text-emerald-600">{{ quizzes|length }}</div>
+            <div class="text-[11px] text-emerald-700 mt-1 font-semibold">Assessments ready</div>
+        </div>
+
+        <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
+            <div class="text-xs text-slate-500 font-medium mb-1">Experience Logged</div>
+            <div class="text-2xl font-black text-purple-600">{{ user.experience_years }} Yrs</div>
+            <div class="text-[11px] text-purple-700 mt-1 font-semibold">Domain seniority</div>
+        </div>
+    </div>
+
+    <!-- Main Grid: My Courses & Upcoming Quizzes -->
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
+        
+        <!-- Left: Enrolled Courses List (8 cols) -->
+        <div class="lg:col-span-8 space-y-6">
+            <div class="flex justify-between items-center">
+                <h2 class="text-lg font-black text-slate-900 flex items-center gap-2">
+                    <i data-lucide="book-open" class="w-5 h-5 text-sky-600"></i> My Active Courses
+                </h2>
+                <span class="text-xs text-slate-400">{{ enrollments|length }} in progress / completed</span>
+            </div>
+
+            {% if enrollments %}
+                <div class="space-y-4">
+                    {% for e in enrollments %}
+                        <div class="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm hover:shadow-md transition">
+                            <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 mb-3">
+                                <div>
+                                    <span class="bg-sky-50 text-sky-700 text-[10px] font-bold px-2 py-0.5 rounded uppercase border border-sky-200">{{ e.domain }}</span>
+                                    <span class="text-slate-400 text-xs ml-2 font-mono">{{ e.code }}</span>
+                                </div>
+                                {% if e.enrollment_status == 'completed' %}
+                                    <span class="bg-emerald-100 text-emerald-800 text-xs font-bold px-2.5 py-0.5 rounded-full flex items-center gap-1">
+                                        <i data-lucide="check-circle" class="w-3.5 h-3.5"></i> Completed
+                                    </span>
+                                {% else %}
+                                    <span class="bg-sky-100 text-sky-800 text-xs font-bold px-2.5 py-0.5 rounded-full">
+                                        In Progress ({{ e.progress_percent }}%)
+                                    </span>
+                                {% endif %}
+                            </div>
+
+                            <h3 class="text-base font-bold text-slate-900 mb-1">
+                                <a href="/trainee/courses/{{ e.course_id }}" class="hover:text-sky-600 transition">{{ e.title }}</a>
+                            </h3>
+                            <p class="text-xs text-slate-500 mb-4">Instructor: <strong>{{ e.trainer_name or "MoES Certified Faculty" }}</strong></p>
+
+                            <!-- Progress Bar -->
+                            <div class="space-y-1.5 mb-4">
+                                <div class="flex justify-between text-[11px] text-slate-500 font-medium">
+                                    <span>Course Progress</span>
+                                    <span>{{ e.progress_percent }}%</span>
+                                </div>
+                                <div class="w-full h-2 bg-slate-100 rounded-full overflow-hidden">
+                                    <div class="h-full bg-gradient-to-r from-sky-500 to-emerald-500 rounded-full" style="width: {{ e.progress_percent }}%"></div>
+                                </div>
+                            </div>
+
+                            <div class="flex justify-between items-center pt-3 border-t border-slate-100 text-xs">
+                                <span class="text-slate-400">Enrolled on {{ e.enrolled_at[:10] }}</span>
+                                <a href="/trainee/courses/{{ e.course_id }}" class="px-4 py-1.5 bg-sky-600 hover:bg-sky-500 text-white font-bold rounded-lg shadow-sm transition flex items-center gap-1.5">
+                                    Resume Learning <i data-lucide="arrow-right" class="w-3.5 h-3.5"></i>
+                                </a>
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <div class="bg-white rounded-2xl p-8 border border-slate-200 text-center text-slate-500">
+                    <i data-lucide="book-marked" class="w-12 h-12 text-slate-300 mx-auto mb-3"></i>
+                    <h3 class="font-bold text-slate-800 text-base">You have not enrolled in any courses yet</h3>
+                    <p class="text-xs text-slate-500 mt-1 max-w-sm mx-auto">Explore our MoES/IMD specialized domain catalog and enroll in high-resolution modeling, radar meteorology, and satellite courses.</p>
+                    <a href="/trainee/courses" class="inline-block mt-4 px-5 py-2.5 bg-sky-600 text-white text-xs font-bold rounded-xl shadow">Explore Courses</a>
+                </div>
+            {% endif %}
+
+            <!-- Recommended Courses -->
+            <div class="pt-6">
+                <h3 class="text-sm font-bold text-slate-800 uppercase tracking-wider mb-4 flex items-center gap-2">
+                    <i data-lucide="sparkles" class="w-4 h-4 text-amber-500"></i> Recommended For Your Skill Profile
+                </h3>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    {% for rec in recommended %}
+                        <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex flex-col justify-between">
+                            <div>
+                                <span class="text-[10px] font-bold text-sky-700 bg-sky-50 px-2 py-0.5 rounded uppercase">{{ rec.domain }}</span>
+                                <h4 class="font-bold text-slate-900 text-sm mt-2 line-clamp-1">{{ rec.title }}</h4>
+                                <p class="text-xs text-slate-500 line-clamp-2 mt-1">{{ rec.description }}</p>
+                            </div>
+                            <div class="mt-4 pt-3 border-t border-slate-100 flex justify-between items-center text-xs">
+                                <span class="text-slate-400">{{ rec.duration_hours }} hrs &bull; {{ rec.level }}</span>
+                                <form action="/trainee/enroll/{{ rec.id }}" method="post">
+                                    <button type="submit" class="px-3 py-1 bg-sky-600 hover:bg-sky-500 text-white font-bold rounded-lg text-xs">Enroll</button>
+                                </form>
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Right: Upcoming Quizzes & Earned Certificates (4 cols) -->
+        <div class="lg:col-span-4 space-y-6">
+            
+            <!-- Quizzes Card -->
+            <div class="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm space-y-4">
+                <div class="flex justify-between items-center border-b border-slate-100 pb-3">
+                    <h3 class="font-bold text-slate-900 text-sm flex items-center gap-2">
+                        <i data-lucide="file-check" class="w-4 h-4 text-emerald-600"></i> Available Assessments
+                    </h3>
+                    <span class="text-[11px] bg-emerald-100 text-emerald-800 font-bold px-2 py-0.5 rounded-full">{{ quizzes|length }}</span>
+                </div>
+
+                {% if quizzes %}
+                    <div class="space-y-3">
+                        {% for q in quizzes %}
+                            <div class="p-3.5 rounded-xl border border-slate-200 bg-slate-50/50 hover:bg-slate-50 transition space-y-2">
+                                <div class="font-bold text-slate-900 text-xs leading-snug">{{ q.quiz_title }}</div>
+                                <div class="text-[11px] text-slate-500">{{ q.course_title }}</div>
+                                <div class="flex justify-between items-center text-[11px] pt-1">
+                                    <span class="text-slate-400"><i data-lucide="clock" class="w-3 h-3 inline"></i> {{ q.duration_mins }} Mins</span>
+                                    {% if q.has_passed %}
+                                        <span class="text-emerald-700 font-bold bg-emerald-100 px-2 py-0.5 rounded">Passed ({{ q.best_score }}%)</span>
+                                    {% else %}
+                                        <a href="/trainee/assessment/{{ q.quiz_id }}" class="px-3 py-1 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-lg shadow-sm">
+                                            Start Quiz
+                                        </a>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <p class="text-xs text-slate-400 text-center py-4">No active quizzes pending for enrolled courses.</p>
+                {% endif %}
+            </div>
+
+            <!-- Certificates Card -->
+            <div class="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm space-y-4">
+                <div class="flex justify-between items-center border-b border-slate-100 pb-3">
+                    <h3 class="font-bold text-slate-900 text-sm flex items-center gap-2">
+                        <i data-lucide="award" class="w-4 h-4 text-amber-500"></i> Earned Certificates
+                    </h3>
+                    <span class="text-[11px] bg-amber-100 text-amber-800 font-bold px-2 py-0.5 rounded-full">{{ certificates|length }}</span>
+                </div>
+
+                {% if certificates %}
+                    <div class="space-y-3">
+                        {% for c in certificates %}
+                            <div class="p-3.5 rounded-xl border border-amber-200 bg-amber-50/50 space-y-2">
+                                <div class="flex justify-between items-start">
+                                    <div class="font-bold text-slate-900 text-xs">{{ c.course_title }}</div>
+                                    <span class="text-[10px] font-bold text-amber-800 bg-amber-200 px-1.5 py-0.5 rounded">{{ c.grade }}</span>
+                                </div>
+                                <div class="text-[11px] font-mono text-slate-500">{{ c.certificate_id }}</div>
+                                <div class="pt-2 flex justify-between items-center">
+                                    <span class="text-[10px] text-slate-400">{{ c.issue_date }}</span>
+                                    <a href="/trainee/certificate/{{ c.certificate_id }}" class="text-xs font-bold text-amber-700 hover:text-amber-800 flex items-center gap-1">
+                                        View Certificate <i data-lucide="external-link" class="w-3 h-3"></i>
+                                    </a>
+                                </div>
+                            </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <p class="text-xs text-slate-400 text-center py-4">Score &ge; 70% in course assessments to automatically generate verifiable MoES certificates.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

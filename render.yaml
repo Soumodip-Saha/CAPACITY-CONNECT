@@ -1,0 +1,26 @@
+﻿services:
+  # Web Service
+  - type: web
+    name: capacity-connect
+    env: python
+    plan: free
+    buildCommand: "pip install -r requirements.txt"
+    startCommand: "python run.py"
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: capacity-connect-db
+          property: connectionString
+      - key: SECRET_KEY
+        generateValue: true
+      - key: RENDER
+        value: "true"
+      - key: PORT
+        value: "8000"
+
+databases:
+  # Managed PostgreSQL Database
+  - name: capacity-connect-db
+    plan: free
+    databaseName: capacity_connect
+    user: capacity_user
