@@ -118,3 +118,13 @@ def custom_404(request: Request, exc: HTTPException):
         "error_code": 404,
         "error_message": "The requested Capacity Building portal resource was not found."
     }, status_code=404)
+@app.exception_handler(404)
+def custom_404(request: Request, exc: HTTPException):
+    user = get_current_user_from_request(request)
+    # Change "base.html" to "404.html" so it actually shows an error message!
+    return templates.TemplateResponse(request=request, name="404.html", context={
+        "request": request,
+        "user": user,
+        "error_code": 404,
+        "error_message": "The requested Capacity Building portal resource was not found."
+    }, status_code=404)
