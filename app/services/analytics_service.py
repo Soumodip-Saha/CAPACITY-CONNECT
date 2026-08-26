@@ -258,7 +258,17 @@ def get_trainer_dashboard_stats(trainer_id: int) -> Dict[str, Any]:
         # Trainees enrolled
         cursor.execute(f"SELECT COUNT(DISTINCT user_id) FROM enrollments WHERE course_id IN ({placeholders})", course_ids)
         res_students = cursor.fetchone()
-        total_students = res_students[0] if res_students and res_students[0] is not None else 0
+if res_students:
+    if isinstance(res_students, dict):
+        total_students = next(iter(res_students.values()), 0)
+    else:
+        try:
+            total_students = res_students[0]
+        except (KeyError, TypeError):
+            total_students = list(res_students)[0]
+    total_students = total_students if total_students is not None else 0
+else:
+    total_students = 0
 
         # Quizzes
         cursor.execute("SELECT COUNT(*) FROM quizzes WHERE trainer_id = ?", (trainer_id,))
