@@ -157,27 +157,40 @@ def verify_certificate_by_id(cert_id: str) -> Optional[Dict[str, Any]]:
             LEFT JOIN users tr ON tr.id = crs.trainer_id
             WHERE c.certificate_id = ?
         """, (cert_id.strip(),))
-        row = cursor.fetchone()
-        if not row:
-            return None
-        return dict(row)
-
-# 3. Analytics Service
-def get_admin_dashboard_stats() -> Dict[str, Any]:
-    with get_db() as db:
-        cursor = db.cursor()
-
-        # Counts
+       # Counts with safe fallbacks
         cursor.execute("SELECT COUNT(*) FROM users WHERE role = 'trainee'")
-        total_trainees = cursor.fetchone()[0]
+        row = cursor.fetchone()
+        total_trainees = row[0] if row and row[0] is not None else 0
 
         cursor.execute("SELECT COUNT(*) FROM users WHERE role = 'trainer' AND status = 'active'")
-        total_trainers = cursor.fetchone()[0]
+        row = cursor.fetchone()
+        total_trainers = row[0] if row and row[0] is not None else 0
 
         cursor.execute("SELECT COUNT(*) FROM users WHERE status = 'pending_approval'")
-        pending_approvals = cursor.fetchone()[0]
+        row = cursor.fetchone()
+        pending_approvals = row[0] if row and row[0] is not None else 0
 
         cursor.execute("SELECT COUNT(*) FROM courses WHERE status = 'published'")
+        row = cursor.fetchone()
+        total_courses = row[0] if row and row[0] is not None else 0
+
+        cursor.execute("SELECT COUNT(*) FROM enrollments")
+        row = cursor.fetchone()
+        total_enrollments = row[0] if row and row[0] is not None else 0
+
+        cursor.execute("SELECT COUNT(*) FROM certificates")
+        row = cursor.fetchone()
+        total_certificates = row[0] if row and row[0] is not None else 0
+
+        cursor.execute("SELECT COUNT(*) FROM quiz_attempts")
+        row = cursor.fetchone()
+        total_attempts = row[0] if row and row[0] is not None else 0
+
+        cursor.execute("SELECT COUNT(*) FROM quiz_attempts WHERE is_passed = 1")
+        row = cursor.fetchone()
+        passed_attempts = row[0] if row and row[0] is not None else 0
+        
+        pass_rate = round((passed_attempts / total_attempts * 100), 1) if total_attempts > 0 else 0.0
         total_courses = cursor.fetchone()[0]
 
         cursor.execute("SELECT COUNT(*) FROM enrollments")
