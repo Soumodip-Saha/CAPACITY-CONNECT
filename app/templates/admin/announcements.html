@@ -33,7 +33,8 @@
                 </div>
 
                 <div class="pt-3 border-t border-slate-100 flex justify-between items-center text-xs">
-                    <span class="text-slate-400 font-mono text-[10px]">{{ a.created_at[:10] }}</span>
+                    <!-- FIXED: Cast datetime to string before slicing -->
+                    <span class="text-slate-400 font-mono text-[10px]">{{ (a.created_at | string)[:10] }}</span>
                     <form action="/admin/announcements/{{ a.id }}/delete" method="post">
                         <button type="submit" onclick="return confirm('Delete this announcement?')" class="text-xs text-rose-600 font-bold hover:underline">
                             Delete Notice
