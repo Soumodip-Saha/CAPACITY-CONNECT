@@ -178,7 +178,6 @@ def add_module(request: Request, course_id: int, title: str = Form(...), summary
         cursor = db.cursor()
         cursor.execute("SELECT COALESCE(MAX(order_num), 0) + 1 FROM course_modules WHERE course_id = ?", (course_id,))
         
-        # FIXED extraction
         res = cursor.fetchone()
         next_order = next(iter(res.values())) if isinstance(res, dict) else (res[0] if res else 1)
 
@@ -188,6 +187,7 @@ def add_module(request: Request, course_id: int, title: str = Form(...), summary
         """, (course_id, title.strip(), next_order, summary.strip()))
 
     return RedirectResponse(url=f"/trainer/courses/{course_id}/manage", status_code=303)
+
 
 @router.post("/courses/{course_id}/lessons/add")
 def add_lesson(
@@ -205,7 +205,6 @@ def add_lesson(
         cursor = db.cursor()
         cursor.execute("SELECT COALESCE(MAX(order_num), 0) + 1 FROM course_lessons WHERE module_id = ?", (module_id,))
         
-        # FIXED extraction
         res = cursor.fetchone()
         next_order = next(iter(res.values())) if isinstance(res, dict) else (res[0] if res else 1)
 
@@ -214,6 +213,7 @@ def add_lesson(
             VALUES (?, ?, ?, ?, ?, ?, ?, ?)
         """, (module_id, course_id, title.strip(), lesson_type, content_url.strip(), duration_mins, notes.strip(), next_order))
 
+    return RedirectResponse(url=f"/trainer/courses/{course_id}/manage", status_code=303)
     return RedirectResponse(url=f"/trainer/courses/{course_id}/manage", status_code=303)
 
 @router.get("/quiz/create", response_class=HTMLResponse)
