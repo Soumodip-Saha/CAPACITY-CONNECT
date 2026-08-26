@@ -90,9 +90,9 @@ def trainer_courses(request: Request):
         """, (user["id"], user["role"]))
         courses = [dict(row) for row in cursor.fetchall()]
 
-        # Domains list
+        # Domains list - FIXED
         cursor.execute("SELECT DISTINCT domain FROM courses")
-        domains = [row[0] for row in cursor.fetchall()]
+        domains = [next(iter(row.values())) if isinstance(row, dict) else row[0] for row in cursor.fetchall()]
 
     return templates.TemplateResponse(request=request, name="trainer/courses.html", context={
         "request": request,
@@ -177,8 +177,10 @@ def add_module(request: Request, course_id: int, title: str = Form(...), summary
     with get_db() as db:
         cursor = db.cursor()
         cursor.execute("SELECT COALESCE(MAX(order_num), 0) + 1 FROM course_modules WHERE course_id = ?", (course_id,))
+        
+        # FIXED extraction
         res = cursor.fetchone()
-    next_order = next(iter(res.values())) if isinstance(res, dict) else (res[0] if res else 1)
+        next_order = next(iter(res.values())) if isinstance(res, dict) else (res[0] if res else 1)
 
         cursor.execute("""
             INSERT INTO course_modules (course_id, title, order_num, summary)
@@ -202,8 +204,10 @@ def add_lesson(
     with get_db() as db:
         cursor = db.cursor()
         cursor.execute("SELECT COALESCE(MAX(order_num), 0) + 1 FROM course_lessons WHERE module_id = ?", (module_id,))
+        
+        # FIXED extraction
         res = cursor.fetchone()
-    next_order = next(iter(res.values())) if isinstance(res, dict) else (res[0] if res else 1)
+        next_order = next(iter(res.values())) if isinstance(res, dict) else (res[0] if res else 1)
 
         cursor.execute("""
             INSERT INTO course_lessons (module_id, course_id, title, lesson_type, content_url, duration_mins, notes, order_num)
@@ -289,8 +293,9 @@ def trainer_library_page(request: Request):
         """, (user["id"], user["role"]))
         resources = [dict(row) for row in cursor.fetchall()]
 
+        # Domains list - FIXED
         cursor.execute("SELECT DISTINCT domain FROM courses")
-        domains = [row[0] for row in cursor.fetchall()]
+        domains = [next(iter(row.values())) if isinstance(row, dict) else row[0] for row in cursor.fetchall()]
 
     return templates.TemplateResponse(request=request, name="trainer/library.html", context={
         "request": request,
