@@ -22,18 +22,6 @@ from app.routes.api_routes import router as api_router
 from fastapi import FastAPI
 from fastapi.responses import Response
 
-app = FastAPI()
-
-# --- ADD IT HERE (near your other basic routes or startup code) ---
-@app.get('/favicon.ico', include_in_schema=False)
-async def favicon():
-    return Response(status_code=204)
-
-# Your other existing routes:
-# @app.get("/")
-# async def read_root():
-#     ...
-
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # Initialize and seed database on startup
@@ -48,6 +36,10 @@ app = FastAPI(
     version="1.0.0",
     lifespan=lifespan
 )
+
+@app.get('/favicon.ico', include_in_schema=False)
+async def favicon():
+    return Response(status_code=204)
 
 # Mount Static & Uploads
 app.mount("/static", StaticFiles(directory="app/static"), name="static")
