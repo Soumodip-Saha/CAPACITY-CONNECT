@@ -167,38 +167,28 @@ def get_admin_dashboard_stats() -> Dict[str, Any]:
     with get_db() as db:
         cursor = db.cursor()
 
-        # Counts with safe fallbacks
-        cursor.execute("SELECT COUNT(*) FROM users WHERE role = 'trainee'")
-        row = cursor.fetchone()
-        total_trainees = row[0] if row and row[0] is not None else 0
+        def safe_fetch_count(query: str, params=()) -> int:
+            cursor.execute(query, params)
+            res = cursor.fetchone()
+            if not res:
+                return 0
+            if isinstance(res, dict):
+                vals = list(res.values())
+                return vals[0] if vals and vals[0] is not None else 0
+            try:
+                return res[0] if res[0] is not None else 0
+            except (KeyError, IndexError, TypeError):
+                return 0
 
-        cursor.execute("SELECT COUNT(*) FROM users WHERE role = 'trainer' AND status = 'active'")
-        row = cursor.fetchone()
-        total_trainers = row[0] if row and row[0] is not None else 0
-
-        cursor.execute("SELECT COUNT(*) FROM users WHERE status = 'pending_approval'")
-        row = cursor.fetchone()
-        pending_approvals = row[0] if row and row[0] is not None else 0
-
-        cursor.execute("SELECT COUNT(*) FROM courses WHERE status = 'published'")
-        row = cursor.fetchone()
-        total_courses = row[0] if row and row[0] is not None else 0
-
-        cursor.execute("SELECT COUNT(*) FROM enrollments")
-        row = cursor.fetchone()
-        total_enrollments = row[0] if row and row[0] is not None else 0
-
-        cursor.execute("SELECT COUNT(*) FROM certificates")
-        row = cursor.fetchone()
-        total_certificates = row[0] if row and row[0] is not None else 0
-
-        cursor.execute("SELECT COUNT(*) FROM quiz_attempts")
-        row = cursor.fetchone()
-        total_attempts = row[0] if row and row[0] is not None else 0
-
-        cursor.execute("SELECT COUNT(*) FROM quiz_attempts WHERE is_passed = 1")
-        row = cursor.fetchone()
-        passed_attempts = row[0] if row and row[0] is not None else 0
+        # Counts with universal safe handlers
+        total_trainees = safe_fetch_count("SELECT COUNT(*) FROM users WHERE role = 'trainee'")
+        total_trainers = safe_fetch_count("SELECT COUNT(*) FROM users WHERE role = 'trainer' AND status = 'active'")
+        pending_approvals = safe_fetch_count("SELECT COUNT(*) FROM users WHERE status = 'pending_approval'")
+        total_courses = safe_fetch_count("SELECT COUNT(*) FROM courses WHERE status = 'published'")
+        total_enrollments = safe_fetch_count("SELECT COUNT(*) FROM enrollments")
+        total_certificates = safe_fetch_count("SELECT COUNT(*) FROM certificates")
+        total_attempts = safe_fetch_count("SELECT COUNT(*) FROM quiz_attempts")
+        passed_attempts = safe_fetch_count("SELECT COUNT(*) FROM quiz_attempts WHERE is_passed = 1")
         
         pass_rate = round((passed_attempts / total_attempts * 100), 1) if total_attempts > 0 else 0.0
 
@@ -267,15 +257,18 @@ def get_trainer_dashboard_stats(trainer_id: int) -> Dict[str, Any]:
 
         # Trainees enrolled
         cursor.execute(f"SELECT COUNT(DISTINCT user_id) FROM enrollments WHERE course_id IN ({placeholders})", course_ids)
-        total_students = cursor.fetchone()[0]
+        res_students = cursor.fetchone()
+        total_students = res_students[0] if res_students and res_students[0] is not None else 0
 
         # Quizzes
         cursor.execute("SELECT COUNT(*) FROM quizzes WHERE trainer_id = ?", (trainer_id,))
-        total_quizzes = cursor.fetchone()[0]
+        res_quizzes = cursor.fetchone()
+        total_quizzes = res_quizzes[0] if res_quizzes and res_quizzes[0] is not None else 0
 
         # Avg Rating
         cursor.execute("SELECT COALESCE(AVG(rating_trainer), 5.0) FROM course_feedback WHERE trainer_id = ?", (trainer_id,))
-        avg_rating = round(cursor.fetchone()[0], 1)
+        res_rating = cursor.fetchone()
+        avg_rating = round(res_rating[0] if res_rating and res_rating[0] is not None else 5.0, 1)
 
         # Recent attempts
         cursor.execute(f"""
