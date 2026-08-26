@@ -80,7 +80,11 @@ def manage_users(request: Request, role: str = "", status_filter: str = "", sear
         users_list = [dict(row) for row in cursor.fetchall()]
 
         cursor.execute("SELECT COUNT(*) FROM users WHERE status = 'pending_approval'")
-        pending_count = cursor.fetchone()[0]
+        res = cursor.fetchone()
+if isinstance(res, dict):
+    pending_count = next(iter(res.values()), 0)
+else:
+    pending_count = res[0] if res and res[0] is not None else 0
 
     return templates.TemplateResponse(request=request, name="admin/users.html", context={
         "request": request,
