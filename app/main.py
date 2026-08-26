@@ -46,6 +46,11 @@ app.include_router(admin_router)
 app.include_router(api_router)
 
 templates = Jinja2Templates(directory="app/templates")
+
+@app.get("/", response_class=HTMLResponse)
+def root_redirect():
+    return RedirectResponse(url="/auth/login", status_code=303)
+    
 @app.get("/login", response_class=HTMLResponse)
 def redirect_to_auth_login():
     return RedirectResponse(url="/auth/login", status_code=303)
