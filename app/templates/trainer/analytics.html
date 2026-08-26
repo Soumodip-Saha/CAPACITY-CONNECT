@@ -66,7 +66,8 @@
                                     <span class="bg-rose-100 text-rose-800 text-[10px] font-bold px-2 py-0.5 rounded-full">Needs Retake</span>
                                 {% endif %}
                             </td>
-                            <td class="py-3 px-4 text-slate-400 font-mono">{{ a.attempted_at[:10] }}</td>
+                            <!-- FIXED: Cast datetime to string before slicing -->
+                            <td class="py-3 px-4 text-slate-400 font-mono">{{ (a.attempted_at | string)[:10] }}</td>
                         </tr>
                     {% endfor %}
                 </tbody>
