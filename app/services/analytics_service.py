@@ -157,7 +157,17 @@ def verify_certificate_by_id(cert_id: str) -> Optional[Dict[str, Any]]:
             LEFT JOIN users tr ON tr.id = crs.trainer_id
             WHERE c.certificate_id = ?
         """, (cert_id.strip(),))
-       # Counts with safe fallbacks
+        row = cursor.fetchone()
+        if not row:
+            return None
+        return dict(row)
+
+# 3. Analytics Service
+def get_admin_dashboard_stats() -> Dict[str, Any]:
+    with get_db() as db:
+        cursor = db.cursor()
+
+        # Counts with safe fallbacks
         cursor.execute("SELECT COUNT(*) FROM users WHERE role = 'trainee'")
         row = cursor.fetchone()
         total_trainees = row[0] if row and row[0] is not None else 0
@@ -190,20 +200,6 @@ def verify_certificate_by_id(cert_id: str) -> Optional[Dict[str, Any]]:
         row = cursor.fetchone()
         passed_attempts = row[0] if row and row[0] is not None else 0
         
-        pass_rate = round((passed_attempts / total_attempts * 100), 1) if total_attempts > 0 else 0.0
-        total_courses = cursor.fetchone()[0]
-
-        cursor.execute("SELECT COUNT(*) FROM enrollments")
-        total_enrollments = cursor.fetchone()[0]
-
-        cursor.execute("SELECT COUNT(*) FROM certificates")
-        total_certificates = cursor.fetchone()[0]
-
-        cursor.execute("SELECT COUNT(*) FROM quiz_attempts")
-        total_attempts = cursor.fetchone()[0]
-
-        cursor.execute("SELECT COUNT(*) FROM quiz_attempts WHERE is_passed = 1")
-        passed_attempts = cursor.fetchone()[0]
         pass_rate = round((passed_attempts / total_attempts * 100), 1) if total_attempts > 0 else 0.0
 
         # Domain distribution
