@@ -194,7 +194,7 @@ def trainee_courses(request: Request, domain: str = "", search: str = "", level:
 
         # All distinct domains for filter pills
         cursor.execute("SELECT DISTINCT domain FROM courses WHERE status = 'published'")
-        domains = [row[0] for row in cursor.fetchall()]
+        domains = [next(iter(row.values())) if isinstance(row, dict) else row[0] for row in cursor.fetchall()]
 
     return templates.TemplateResponse(request=request, name="trainee/courses.html", context={
         "request": request,
