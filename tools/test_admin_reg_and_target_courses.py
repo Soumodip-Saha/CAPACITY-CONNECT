@@ -1,4 +1,4 @@
-﻿import sys
+import sys
 import os
 sys.path.insert(0, os.path.abspath("."))
 
@@ -73,12 +73,22 @@ def run_tests():
     courses_resp = client.get("/trainer/courses")
     assert courses_resp.status_code == 200
     assert "National Target Courses" in courses_resp.text
+    # Check baseline courses
     assert "IMD-AI-401" in courses_resp.text
     assert "IMD-AVN-201" in courses_resp.text
     assert "INCOIS-OCN-301" in courses_resp.text
     assert "NCMRWF-HPC-501" in courses_resp.text
     assert "IMD-RAD-302" in courses_resp.text
-    print(" [PASS] 3. Trainer Portal displays expanded MoES National Target Courses Matrix (all 12 courses)")
+    # Check newly expanded domain courses
+    assert "NCPOR-POL-401" in courses_resp.text
+    assert "IMD-HYD-201" in courses_resp.text
+    assert "IITM-AQ-301" in courses_resp.text
+    assert "NIOT-MAR-401" in courses_resp.text
+    assert "IIG-MAG-301" in courses_resp.text
+    assert "IMD-URB-202" in courses_resp.text
+    assert "NCCR-CST-301" in courses_resp.text
+    assert "IMD-INS-101" in courses_resp.text
+    print(" [PASS] 3. Trainer Portal displays expanded MoES National Target Courses Matrix (all 20 domain courses)")
 
     # 4. Test Trainer Quiz Builder dropdown has all target courses
     quiz_page = client.get("/trainer/quiz/create")
@@ -88,9 +98,28 @@ def run_tests():
     assert "INCOIS-OCN-301" in quiz_page.text
     assert "NCMRWF-HPC-501" in quiz_page.text
     assert "IMD-RAD-302" in quiz_page.text
-    print(" [PASS] 4. Trainer Quiz Builder allows selecting from all 12 MoES target courses across disciplines")
+    assert "NCPOR-POL-401" in quiz_page.text
+    assert "IMD-HYD-201" in quiz_page.text
+    assert "IITM-AQ-301" in quiz_page.text
+    assert "NIOT-MAR-401" in quiz_page.text
+    assert "IIG-MAG-301" in quiz_page.text
+    assert "IMD-URB-202" in quiz_page.text
+    assert "NCCR-CST-301" in quiz_page.text
+    assert "IMD-INS-101" in quiz_page.text
+    print(" [PASS] 4. Trainer Quiz Builder allows selecting from all 20 MoES target courses across disciplines")
 
-    print("\n=== ALL NEW ADMIN REGISTRATION & TARGET COURSE TESTS PASSED 100%! ===")
+    # 5. Verify database has 20 courses and 19 distinct domains
+    with get_db() as db:
+        cursor = db.cursor()
+        cursor.execute("SELECT COUNT(*) FROM courses")
+        total_courses = cursor.fetchone()[0]
+        assert total_courses >= 20, f"Expected at least 20 courses, got {total_courses}"
+        cursor.execute("SELECT COUNT(DISTINCT domain) FROM courses")
+        total_domains = cursor.fetchone()[0]
+        assert total_domains >= 19, f"Expected at least 19 domains, got {total_domains}"
+    print(f" [PASS] 5. Database verified with {total_courses} courses across {total_domains} unique domains")
+
+    print("\n=== ALL NEW ADMIN REGISTRATION & 20 TARGET COURSE TESTS PASSED 100%! ===")
 
 if __name__ == "__main__":
     run_tests()

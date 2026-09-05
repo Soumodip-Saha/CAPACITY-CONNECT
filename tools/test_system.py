@@ -1,4 +1,4 @@
-﻿import sys
+import sys
 import os
 sys.path.insert(0, os.path.abspath("."))
 
@@ -49,12 +49,18 @@ def run_tests():
     assert "capacity_connect_session" in cookie
     print(" [PASS] 5. 1-Click Demo Login sets secure session token for Admin")
 
-    # 6. Test Admin Dashboard with Session
+    # 6. Test Admin Dashboard & Competency Map with Session
     client.cookies.set("capacity_connect_session", resp.cookies.get("capacity_connect_session"))
     admin_dash = client.get("/admin/dashboard")
     assert admin_dash.status_code == 200
     assert "Executive Capacity Command" in admin_dash.text
     print(" [PASS] 6. Admin Command Center renders KPI metrics and charts")
+
+    # 6b. Test Competency Mapping Engine Page
+    comp_page = client.get("/admin/competency-map")
+    assert comp_page.status_code == 200
+    assert "Trainer Competency Mapping Engine" in comp_page.text
+    print(" [PASS] 6b. Competency Mapping Engine renders ranked trainers without Decimal/Float errors")
 
     # 7. Test Trainee Flow
     resp_tr = client.get("/auth/demo-login/trainee", follow_redirects=False)
@@ -70,7 +76,7 @@ def run_tests():
     assert "Numerical Weather Prediction" in courses_page.text
     print(" [PASS] 8. Course Catalog renders all MoES specialized domain courses")
 
-    # 9. Test Trainer Flow
+    # 9. Test Trainer Flow & Analytics
     resp_trn = client.get("/auth/demo-login/trainer", follow_redirects=False)
     client.cookies.set("capacity_connect_session", resp_trn.cookies.get("capacity_connect_session"))
     trainer_dash = client.get("/trainer/dashboard")
@@ -78,7 +84,13 @@ def run_tests():
     assert "Faculty & Subject Expert Suite" in trainer_dash.text
     print(" [PASS] 9. Trainer Suite loads authoring courses & roster")
 
-    print("\n=== ALL 9 AUTOMATED INTEGRATION TESTS PASSED PERFECTLY! ===")
+    # 10. Test Trainer Analytics (GROUP BY verification)
+    trainer_analytics = client.get("/trainer/analytics")
+    assert trainer_analytics.status_code == 200, f"Trainer analytics failed: {trainer_analytics.status_code}"
+    assert "Performance & Cohort Analytics" in trainer_analytics.text or "Question" in trainer_analytics.text
+    print(" [PASS] 10. Trainer Analytics loads question stats and cohorts without GROUP BY errors")
+
+    print("\n=== ALL 10 AUTOMATED INTEGRATION TESTS PASSED PERFECTLY! ===")
 
 if __name__ == "__main__":
     run_tests()

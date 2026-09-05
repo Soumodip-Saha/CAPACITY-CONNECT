@@ -208,7 +208,12 @@ document.addEventListener('DOMContentLoaded', async () => {
                 labels: data.domains.map(d => d.domain),
                 datasets: [{
                     data: data.domains.map(d => d.count),
-                    backgroundColor: ['#0284c7', '#059669', '#d97706', '#9333ea', '#ea580c', '#0d9488']
+                    backgroundColor: [
+                        '#0284c7', '#059669', '#d97706', '#9333ea', '#ea580c', '#0d9488',
+                        '#2563eb', '#16a34a', '#ca8a04', '#7c3aed', '#dc2626', '#0891b2',
+                        '#4f46e5', '#65a30d', '#b45309', '#c026d3', '#e11d48', '#0f766e',
+                        '#1d4ed8', '#047857'
+                    ]
                 }]
             },
             options: {

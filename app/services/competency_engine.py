@@ -63,7 +63,7 @@ def calculate_trainer_competency(
             domain_score = 0.0
             if domain and domain.lower() in dept_str:
                 domain_score += 15.0
-            if any(term in dept_str for term in ["nwp", "radar", "satellite", "cyclone", "agromet", "seismol", "iitm", "ncs", "imd", "incois"]):
+            if any(term in dept_str for term in ["nwp", "radar", "satellite", "cyclone", "agromet", "seismol", "iitm", "ncs", "imd", "incois", "ncpor", "polar", "cryo", "niot", "ocean", "hydro", "flood", "cwc", "safar", "air quality", "iig", "geomag", "space weather", "urban", "nccr", "coastal", "instrument"]):
                 domain_score += 10.0
             domain_score = min(25.0, domain_score)
 
