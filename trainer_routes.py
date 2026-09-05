@@ -176,6 +176,15 @@ def manage_course_content(request: Request, course_id: int):
         cursor.execute("SELECT DISTINCT domain FROM courses ORDER BY domain ASC")
         domains = [row[0] for row in cursor.fetchall()]
 
+        cursor.execute("""
+            SELECT l.*, u.full_name as trainer_name
+            FROM trainer_library l
+            LEFT JOIN users u ON u.id = l.trainer_id
+            WHERE l.category = ? OR l.category = ?
+            ORDER BY l.created_at DESC
+        """, (course["domain"], course["code"]))
+        materials = [dict(row) for row in cursor.fetchall()]
+
     return templates.TemplateResponse(request=request, name="trainer/course_manage.html", context={
         "request": request,
         "user": user,
@@ -183,9 +192,66 @@ def manage_course_content(request: Request, course_id: int):
         "modules": modules,
         "quizzes": quizzes,
         "domains": domains,
+        "materials": materials,
         "success": request.query_params.get("success"),
         "error": request.query_params.get("error")
     })
+
+@router.post("/courses/{course_id}/materials/upload")
+async def upload_course_material(
+    request: Request,
+    course_id: int,
+    title: str = Form(...),
+    resource_type: str = Form("Technical Document"),
+    file_url: str = Form(""),
+    file_size: str = Form("10 MB"),
+    description: str = Form(""),
+    file: Optional[UploadFile] = File(None)
+):
+    user = require_auth(request, allowed_roles=["trainer", "admin"])
+    with get_db() as db:
+        cursor = db.cursor()
+        cursor.execute("SELECT domain, code FROM courses WHERE id = ?", (course_id,))
+        c = cursor.fetchone()
+        if not c:
+            raise HTTPException(status_code=404, detail="Course not found")
+        domain = c[0]
+        code = c[1]
+
+        final_url = file_url.strip()
+        final_size = file_size.strip() or "10 MB"
+
+        if file and file.filename:
+            import shutil
+            from pathlib import Path
+            upload_dir = Path("uploads/materials")
+            upload_dir.mkdir(parents=True, exist_ok=True)
+            clean_fname = f"{code}_{int(datetime.now().timestamp())}_{Path(file.filename).name.replace(' ', '_')}"
+            dest_path = upload_dir / clean_fname
+            with open(dest_path, "wb") as buffer:
+                shutil.copyfileobj(file.file, buffer)
+            final_url = f"/uploads/materials/{clean_fname}"
+            size_mb = dest_path.stat().st_size / (1024 * 1024)
+            final_size = f"{size_mb:.1f} MB" if size_mb >= 0.1 else f"{max(1, dest_path.stat().st_size // 1024)} KB"
+
+        if not final_url:
+            final_url = f"/static/docs/{domain.replace(' ', '_')}_Guide.pdf"
+
+        cursor.execute("""
+            INSERT INTO trainer_library (trainer_id, title, resource_type, category, file_url, file_size, description)
+            VALUES (?, ?, ?, ?, ?, ?, ?)
+        """, (user["id"], title.strip(), resource_type.strip(), domain, final_url, final_size, description.strip()))
+
+    return RedirectResponse(url=f"/trainer/courses/{course_id}/manage?success=Study+material+uploaded+successfully", status_code=303)
+
+@router.post("/courses/{course_id}/materials/{material_id}/delete")
+def delete_course_material(request: Request, course_id: int, material_id: int):
+    user = require_auth(request, allowed_roles=["trainer", "admin"])
+    with get_db() as db:
+        cursor = db.cursor()
+        cursor.execute("DELETE FROM trainer_library WHERE id = ?", (material_id,))
+
+    return RedirectResponse(url=f"/trainer/courses/{course_id}/manage?success=Material+deleted+successfully", status_code=303)
 
 @router.post("/courses/{course_id}/edit")
 def edit_course_details(

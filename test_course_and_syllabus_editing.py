@@ -101,7 +101,33 @@ def run_tests():
     assert "Module 99: Renamed Verification Module" not in del_mod_resp.text
     print(" [PASS] 8. Module and associated content deleted successfully")
 
+    # 10. Test Uploading Course Study Material
+    upload_mat_resp = client.post("/trainer/courses/1/materials/upload", data={
+        "title": "NWP Operational Forecast Handbook 2026",
+        "resource_type": "Technical Document",
+        "file_size": "4.2 MB",
+        "file_url": "/static/docs/NWP_Guide.pdf",
+        "description": "Comprehensive reference handbook for numerical weather prediction."
+    }, follow_redirects=True)
+    assert upload_mat_resp.status_code == 200
+    assert "Study material uploaded successfully" in upload_mat_resp.text
+    assert "NWP Operational Forecast Handbook 2026" in upload_mat_resp.text
+    print(" [PASS] 9. Course Study Material uploaded and rendered in syllabus view successfully")
+
+    # Get material ID
+    with get_db() as db:
+        cursor = db.cursor()
+        cursor.execute("SELECT id FROM trainer_library WHERE title = 'NWP Operational Forecast Handbook 2026'")
+        mat_id = cursor.fetchone()[0]
+
+    # 11. Test Deleting Course Study Material
+    del_mat_resp = client.post(f"/trainer/courses/1/materials/{mat_id}/delete", follow_redirects=True)
+    assert del_mat_resp.status_code == 200
+    assert "Material deleted successfully" in del_mat_resp.text
+    print(" [PASS] 10. Course Study Material removed cleanly")
+
     print("\n=== ALL COURSE & SYLLABUS EDITING TESTS PASSED 100%! ===")
 
 if __name__ == "__main__":
     run_tests()
+

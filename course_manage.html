@@ -112,7 +112,7 @@
                                                 <i data-lucide="external-link" class="w-3 h-3"></i> View
                                             </a>
                                         {% endif %}
-                                        <button onclick="openEditLessonModal({{ l.id }}, {{ l.title|tojson }}, {{ l.lesson_type|tojson }}, {{ l.duration_mins }}, {{ (l.content_url or '')|tojson }}, {{ (l.notes or '')|tojson }})" class="p-1.5 text-slate-400 hover:text-slate-700 rounded-lg hover:bg-slate-200 transition" title="Edit Lesson">
+                                        <button onclick="openEditLessonModal({{ l.id }}, {{ l.title|tojson }}, {{ l.lesson_type|tojson }}, {{ (l.duration_mins or 15)|tojson }}, {{ (l.content_url or '')|tojson }}, {{ (l.notes or '')|tojson }})" class="p-1.5 text-slate-400 hover:text-slate-700 rounded-lg hover:bg-slate-200 transition" title="Edit Lesson">
                                             <i data-lucide="edit-2" class="w-3.5 h-3.5"></i>
                                         </button>
                                         <form action="/trainer/courses/{{ course.id }}/lessons/{{ l.id }}/delete" method="post" onsubmit="return confirm('Delete this lesson?')">
@@ -139,6 +139,68 @@
                 <button onclick="document.getElementById('addModuleModal').classList.remove('hidden')" class="px-4 py-2 bg-sky-600 hover:bg-sky-500 text-white font-bold text-xs rounded-xl shadow transition">
                     Create First Module
                 </button>
+            </div>
+        {% endif %}
+    </div>
+
+    <!-- Course Study Materials & Technical References Section -->
+    <div class="space-y-4 pt-4 border-t border-slate-200">
+        <div class="flex justify-between items-center">
+            <div>
+                <h2 class="text-lg font-black text-slate-900 flex items-center gap-2">
+                    <i data-lucide="file-text" class="w-5 h-5 text-emerald-600"></i> Course Study Materials & Technical References
+                </h2>
+                <p class="text-xs text-slate-500">Attach operational manuals, scientific slide decks, NetCDF/GRIB datasets, and research papers</p>
+            </div>
+            <button onclick="document.getElementById('uploadMaterialModal').classList.remove('hidden')" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold rounded-xl shadow flex items-center gap-1.5 transition">
+                <i data-lucide="upload" class="w-4 h-4"></i> Upload Study Material
+            </button>
+        </div>
+
+        {% if materials %}
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {% for mat in materials %}
+                    <div class="bg-white rounded-2xl p-4 border border-slate-200 shadow-sm flex flex-col justify-between space-y-3 hover:border-slate-300 transition">
+                        <div>
+                            <div class="flex justify-between items-start gap-2 mb-1.5">
+                                <span class="text-[10px] font-bold px-2 py-0.5 rounded uppercase
+                                    {% if 'Presentation' in mat.resource_type or 'Slide' in mat.resource_type %}bg-purple-100 text-purple-800
+                                    {% elif 'Dataset' in mat.resource_type or 'NetCDF' in mat.resource_type %}bg-amber-100 text-amber-800
+                                    {% elif 'Paper' in mat.resource_type %}bg-blue-100 text-blue-800
+                                    {% else %}bg-emerald-100 text-emerald-800{% endif %}">
+                                    {{ mat.resource_type }}
+                                </span>
+                                <span class="text-[11px] font-mono text-slate-400">{{ mat.file_size or '5 MB' }}</span>
+                            </div>
+                            <h4 class="font-bold text-slate-900 text-xs leading-snug">{{ mat.title }}</h4>
+                            {% if mat.description %}
+                                <p class="text-[11px] text-slate-500 mt-1 line-clamp-2 leading-relaxed">{{ mat.description }}</p>
+                            {% endif %}
+                        </div>
+
+                        <div class="flex items-center justify-between pt-2 border-t border-slate-100 text-[11px]">
+                            <span class="text-slate-400">By {{ mat.trainer_name or 'Faculty Lead' }}</span>
+                            <div class="flex items-center gap-2">
+                                {% if mat.file_url %}
+                                    <a href="{{ mat.file_url }}" target="_blank" class="px-3 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-lg text-[11px] flex items-center gap-1 transition">
+                                        <i data-lucide="download" class="w-3 h-3"></i> Access File
+                                    </a>
+                                {% endif %}
+                                <form action="/trainer/courses/{{ course.id }}/materials/{{ mat.id }}/delete" method="post" onsubmit="return confirm('Remove this material?')">
+                                    <button type="submit" class="p-1 text-slate-400 hover:text-rose-600 rounded transition" title="Delete Material">
+                                        <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <div class="bg-slate-50 rounded-2xl p-6 border border-dashed border-slate-200 text-center space-y-2">
+                <i data-lucide="file-plus-2" class="w-8 h-8 text-slate-400 mx-auto"></i>
+                <p class="text-xs text-slate-600 font-medium">No specialized study materials uploaded for this curriculum yet.</p>
+                <p class="text-[11px] text-slate-400">Click "Upload Study Material" to share PDFs, slide decks, or observation files with enrolled trainees.</p>
             </div>
         {% endif %}
     </div>
@@ -308,6 +370,53 @@
                 <textarea name="notes" id="edit_lesson_notes" rows="2" class="w-full px-3 py-2 text-xs border border-slate-300 rounded-xl"></textarea>
             </div>
             <button type="submit" class="w-full py-2.5 bg-slate-900 hover:bg-slate-800 text-white font-bold rounded-xl text-xs shadow transition">Save Lesson Changes</button>
+        </form>
+    </div>
+</div>
+
+<!-- Modal: Upload Course Study Material -->
+<div id="uploadMaterialModal" class="hidden fixed inset-0 bg-slate-950/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+    <div class="bg-white rounded-3xl p-6 max-w-md w-full border border-slate-200 shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto">
+        <div class="flex justify-between items-center">
+            <h3 class="font-bold text-slate-900 text-base flex items-center gap-2">
+                <i data-lucide="upload-cloud" class="w-5 h-5 text-emerald-600"></i> Upload Course Study Material
+            </h3>
+            <button onclick="document.getElementById('uploadMaterialModal').classList.add('hidden')" class="p-1 text-slate-400 hover:text-slate-600"><i data-lucide="x" class="w-5 h-5"></i></button>
+        </div>
+        <form action="/trainer/courses/{{ course.id }}/materials/upload" method="post" enctype="multipart/form-data" class="space-y-3">
+            <div>
+                <label class="block text-xs font-bold text-slate-700 mb-1">Document / Resource Title *</label>
+                <input type="text" name="title" required placeholder="e.g. Operational DWR Severe Weather Nowcasting Manual" class="w-full px-3 py-2 text-xs border border-slate-300 rounded-xl focus:ring-2 focus:ring-emerald-500">
+            </div>
+            <div class="grid grid-cols-2 gap-3">
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">Resource Type</label>
+                    <select name="resource_type" class="w-full px-3 py-2 text-xs border border-slate-300 rounded-xl bg-white">
+                        <option value="Technical Document">Technical Document (PDF)</option>
+                        <option value="Presentation Slide Deck">Presentation Slide Deck</option>
+                        <option value="Lecture Notes">Lecture Notes</option>
+                        <option value="Research Paper">Research Paper</option>
+                        <option value="Observational Dataset">Observational Dataset (NetCDF)</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">Estimated Size</label>
+                    <input type="text" name="file_size" value="8.5 MB" class="w-full px-3 py-2 text-xs border border-slate-300 rounded-xl">
+                </div>
+            </div>
+            <div>
+                <label class="block text-xs font-bold text-slate-700 mb-1">Upload File (PDF, PPT, NetCDF)</label>
+                <input type="file" name="file" class="w-full text-xs text-slate-600 file:mr-3 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-emerald-50 file:text-emerald-700 hover:file:bg-emerald-100 border border-slate-300 rounded-xl">
+            </div>
+            <div>
+                <label class="block text-xs font-bold text-slate-700 mb-1">OR External URL / Reference</label>
+                <input type="text" name="file_url" placeholder="https://... or leave empty to use uploaded file" class="w-full px-3 py-2 text-xs border border-slate-300 rounded-xl">
+            </div>
+            <div>
+                <label class="block text-xs font-bold text-slate-700 mb-1">Brief Description / Reading Objectives</label>
+                <textarea name="description" rows="2" placeholder="Summary of chapters, methodology, or calibration parameters" class="w-full px-3 py-2 text-xs border border-slate-300 rounded-xl"></textarea>
+            </div>
+            <button type="submit" class="w-full py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-xl text-xs shadow transition">Upload to Course Repository</button>
         </form>
     </div>
 </div>

@@ -1,0 +1,309 @@
+{% extends "base.html" %}
+
+{% block title %}{{ course.title }} - MoES / IMD CAPACITY CONNECT{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
+    
+    <!-- Course Title & Status Header -->
+    <div class="bg-white rounded-3xl p-6 sm:p-8 border border-slate-200 shadow-sm flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+        <div>
+            <div class="flex items-center gap-2 mb-2">
+                <span class="bg-sky-50 text-sky-700 text-xs font-bold px-2.5 py-0.5 rounded-full uppercase border border-sky-200">{{ course.domain }}</span>
+                <span class="text-xs font-mono text-slate-400 font-semibold">{{ course.code }}</span>
+                <span class="text-xs text-slate-400">&bull; {{ course.duration_hours }} Hours &bull; {{ course.level }}</span>
+            </div>
+            <h1 class="text-2xl sm:text-3xl font-black text-slate-900 leading-tight">{{ course.title }}</h1>
+            <p class="text-xs text-slate-500 mt-1">Instructor: <strong>{{ course.trainer_name or "MoES Training Cell" }}</strong> ({{ course.trainer_designation or "Lead Scientist" }})</p>
+        </div>
+
+        <div class="flex flex-wrap items-center gap-3">
+            {% if enrollment %}
+                <div class="text-right">
+                    <div class="text-xs font-bold text-slate-700">Course Progress</div>
+                    <div class="text-lg font-black text-sky-600">{{ enrollment.progress_percent }}% Completed</div>
+                </div>
+            {% else %}
+                <form action="/trainee/enroll/{{ course.id }}" method="post">
+                    <button type="submit" class="px-6 py-3 bg-sky-600 hover:bg-sky-500 text-white font-bold rounded-xl shadow-lg transition">
+                        Enroll in Course
+                    </button>
+                </form>
+            {% endif %}
+
+            {% if certificate %}
+                <a href="/trainee/certificate/{{ certificate.certificate_id }}" class="px-5 py-3 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold rounded-xl shadow transition flex items-center gap-2 text-xs">
+                    <i data-lucide="award" class="w-4 h-4"></i> View Official Certificate
+                </a>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Main Workspace Grid (8 cols content player, 4 cols syllabus & assessment) -->
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
+        
+        <!-- Left: Active Lesson Learning Player (8 cols) -->
+        <div class="lg:col-span-8 space-y-6">
+            
+            {% if current_lesson %}
+                <!-- Lesson Player Card -->
+                <div class="bg-white rounded-3xl border border-slate-200 overflow-hidden shadow-sm">
+                    
+                    <!-- Media Container -->
+                    <div class="aspect-video bg-slate-950 flex items-center justify-center relative">
+                        {% if current_lesson.lesson_type == 'video' %}
+                            <iframe class="w-full h-full" src="{{ current_lesson.content_url }}" title="Meteorological Lecture" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+                        {% elif current_lesson.lesson_type == 'presentation' %}
+                            <div class="text-center p-8 text-white space-y-4">
+                                <i data-lucide="file-text" class="w-16 h-16 text-sky-400 mx-auto"></i>
+                                <h3 class="text-lg font-bold">Interactive Presentation Slide Deck</h3>
+                                <p class="text-xs text-slate-300 max-w-md mx-auto">Click below to open and study the official MoES presentation deck with lecture annotations.</p>
+                                <a href="{{ current_lesson.content_url or '/static/docs/Meteorology_Material.pdf' }}" target="_blank" class="inline-flex items-center gap-2 px-5 py-2.5 bg-sky-600 hover:bg-sky-500 text-white text-xs font-bold rounded-xl shadow">
+                                    <i data-lucide="download" class="w-4 h-4"></i> Open / Download Slide Deck (PDF)
+                                </a>
+                            </div>
+                        {% else %}
+                            <div class="text-center p-8 text-white space-y-4">
+                                <i data-lucide="book-open-check" class="w-16 h-16 text-emerald-400 mx-auto"></i>
+                                <h3 class="text-lg font-bold">Scientific Document & Reference Guide</h3>
+                                <p class="text-xs text-slate-300 max-w-md mx-auto">Official IMD Technical Manual & Standard Operating Procedures document.</p>
+                                <a href="{{ current_lesson.content_url or '/static/docs/Meteorology_Material.pdf' }}" target="_blank" class="inline-flex items-center gap-2 px-5 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold rounded-xl shadow">
+                                    <i data-lucide="file-down" class="w-4 h-4"></i> Download Technical Document
+                                </a>
+                            </div>
+                        {% endif %}
+                    </div>
+
+                    <!-- Lesson Info & Completion Button -->
+                    <div class="p-6 sm:p-8 space-y-4">
+                        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 border-b border-slate-100 pb-4">
+                            <div>
+                                <span class="text-[10px] font-bold text-sky-700 bg-sky-50 px-2 py-0.5 rounded uppercase">{{ current_lesson.lesson_type }}</span>
+                                <h2 class="text-xl font-bold text-slate-900 mt-1">{{ current_lesson.title }}</h2>
+                                <span class="text-xs text-slate-400"><i data-lucide="clock" class="w-3.5 h-3.5 inline"></i> {{ current_lesson.duration_mins }} Minutes</span>
+                            </div>
+
+                            {% if enrollment %}
+                                <button onclick="toggleLesson({{ current_lesson.id }})" id="btnLessonToggle" class="px-5 py-2.5 rounded-xl font-bold text-xs flex items-center gap-2 transition {% if current_lesson.id in completed_lessons %}bg-emerald-100 text-emerald-800 border border-emerald-300{% else %}bg-slate-900 hover:bg-slate-800 text-white{% endif %}">
+                                    <i data-lucide="check-circle" class="w-4 h-4"></i>
+                                    <span id="btnLessonToggleText">{% if current_lesson.id in completed_lessons %}Lesson Completed{% else %}Mark as Completed{% endif %}</span>
+                                </button>
+                            {% endif %}
+                        </div>
+
+                        <!-- Lesson Notes -->
+                        <div class="space-y-2">
+                            <h4 class="text-xs font-bold uppercase tracking-wider text-slate-700">Lecture Key Notes & Formulations:</h4>
+                            <div class="bg-slate-50 p-4 rounded-2xl border border-slate-200 text-xs text-slate-700 leading-relaxed">
+                                {{ current_lesson.notes or "Study the theoretical foundations and numerical formulations presented in this module." }}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            {% endif %}
+
+            <!-- Downloadable Datasets & Study Materials -->
+            {% if resources %}
+                <div class="bg-white rounded-3xl p-6 sm:p-8 border border-slate-200 shadow-sm space-y-4">
+                    <h3 class="font-bold text-slate-900 text-sm uppercase tracking-wider flex items-center gap-2">
+                        <i data-lucide="database" class="w-4 h-4 text-sky-600"></i> Observational Datasets & Trainer Handouts
+                    </h3>
+                    <div class="space-y-2">
+                        {% for r in resources %}
+                            <div class="p-3.5 rounded-2xl border border-slate-200 flex justify-between items-center bg-slate-50 text-xs">
+                                <div>
+                                    <div class="font-bold text-slate-900">{{ r.title }}</div>
+                                    <div class="text-[11px] text-slate-400">{{ r.resource_type }} &bull; {{ r.file_size }}</div>
+                                </div>
+                                <a href="{{ r.file_url }}" target="_blank" class="px-3 py-1.5 bg-slate-900 hover:bg-slate-800 text-white rounded-lg font-bold flex items-center gap-1 text-[11px]">
+                                    <i data-lucide="download" class="w-3.5 h-3.5"></i> Download
+                                </a>
+                            </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            {% endif %}
+
+            <!-- Course Feedback Form -->
+            <div class="bg-white rounded-3xl p-6 sm:p-8 border border-slate-200 shadow-sm space-y-4">
+                <h3 class="font-bold text-slate-900 text-sm uppercase tracking-wider flex items-center gap-2">
+                    <i data-lucide="message-square" class="w-4 h-4 text-purple-600"></i> Course & Trainer Evaluation
+                </h3>
+
+                {% if feedback %}
+                    <div class="p-4 bg-purple-50 rounded-2xl border border-purple-200 text-xs space-y-2">
+                        <div class="flex justify-between items-center">
+                            <span class="font-bold text-purple-950">Your Submitted Feedback:</span>
+                            <span class="text-purple-700 font-bold">Overall: {{ feedback.rating_overall }}/5 ★</span>
+                        </div>
+                        <p class="text-slate-600 italic">"{{ feedback.comments }}"</p>
+                    </div>
+                {% else %}
+                    <form action="/trainee/feedback/{{ course.id }}" method="post" class="space-y-4">
+                        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                            <div>
+                                <label class="block text-xs font-bold text-slate-700 mb-1">Content Quality (1-5)</label>
+                                <select name="rating_content" class="w-full p-2 text-xs border border-slate-300 rounded-xl bg-white">
+                                    <option value="5">5 - Outstanding</option>
+                                    <option value="4">4 - Very Good</option>
+                                    <option value="3">3 - Satisfactory</option>
+                                    <option value="2">2 - Needs Work</option>
+                                    <option value="1">1 - Poor</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-slate-700 mb-1">Trainer Effectiveness (1-5)</label>
+                                <select name="rating_trainer" class="w-full p-2 text-xs border border-slate-300 rounded-xl bg-white">
+                                    <option value="5">5 - Outstanding</option>
+                                    <option value="4">4 - Very Good</option>
+                                    <option value="3">3 - Satisfactory</option>
+                                    <option value="2">2 - Needs Work</option>
+                                    <option value="1">1 - Poor</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-slate-700 mb-1">Overall Value (1-5)</label>
+                                <select name="rating_overall" class="w-full p-2 text-xs border border-slate-300 rounded-xl bg-white">
+                                    <option value="5">5 - Highly Recommended</option>
+                                    <option value="4">4 - Recommended</option>
+                                    <option value="3">3 - Average</option>
+                                    <option value="2">2 - Fair</option>
+                                    <option value="1">1 - Unsatisfactory</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div>
+                            <label class="block text-xs font-bold text-slate-700 mb-1">Qualitative Feedback & Comments</label>
+                            <textarea name="comments" rows="2" placeholder="How did this training support your operational capacity at IMD/MoES?" class="w-full p-2.5 text-xs border border-slate-300 rounded-xl focus:ring-2 focus:ring-sky-500 focus:outline-none"></textarea>
+                        </div>
+
+                        <button type="submit" class="px-4 py-2 bg-purple-600 hover:bg-purple-500 text-white font-bold text-xs rounded-xl shadow">
+                            Submit Evaluation
+                        </button>
+                    </form>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Right: Syllabus Modules & Assessment Hub (4 cols) -->
+        <div class="lg:col-span-4 space-y-6">
+            
+            <!-- Assessment Gate Card -->
+            <div class="bg-gradient-to-br from-slate-900 to-sky-950 text-white rounded-3xl p-6 shadow-xl space-y-4 border border-sky-800/40">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center font-bold">
+                        <i data-lucide="award" class="w-5 h-5"></i>
+                    </div>
+                    <div>
+                        <h3 class="font-bold text-sm">Certification Assessment</h3>
+                        <p class="text-[11px] text-slate-400">Passing Threshold: 70% Cutoff</p>
+                    </div>
+                </div>
+
+                {% if quizzes %}
+                    {% for q in quizzes %}
+                        <div class="p-4 rounded-2xl bg-slate-800/80 border border-slate-700 space-y-3">
+                            <div class="font-bold text-xs text-white leading-snug">{{ q.title }}</div>
+                            <div class="text-[11px] text-slate-300">
+                                {{ q.question_count }} Questions &bull; {{ q.duration_mins }} Mins &bull; Pass: {{ q.pass_percentage }}%
+                            </div>
+
+                            {% if q.is_passed %}
+                                <div class="p-2.5 bg-emerald-500/20 rounded-xl border border-emerald-500/30 text-xs text-emerald-300 font-bold flex justify-between items-center">
+                                    <span>Passed ({{ q.last_percentage }}%)</span>
+                                    <a href="/trainee/assessment/result/{{ q.last_attempt_id }}" class="text-[11px] underline text-white">Review &rarr;</a>
+                                </div>
+                            {% elif q.last_score is not none %}
+                                <div class="p-2.5 bg-amber-500/20 rounded-xl border border-amber-500/30 text-xs text-amber-300 space-y-1">
+                                    <div class="flex justify-between font-bold">
+                                        <span>Previous Score: {{ q.last_percentage }}%</span>
+                                        <a href="/trainee/assessment/result/{{ q.last_attempt_id }}" class="text-[11px] underline">Review</a>
+                                    </div>
+                                    <a href="/trainee/assessment/{{ q.id }}" class="block text-center py-1.5 bg-sky-600 hover:bg-sky-500 text-white font-bold rounded-lg text-xs mt-2">
+                                        Retake Assessment
+                                    </a>
+                                </div>
+                            {% else %}
+                                <a href="/trainee/assessment/{{ q.id }}" class="block text-center py-2 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-xl text-xs shadow-lg transition">
+                                    Launch Timed Assessment &rarr;
+                                </a>
+                            {% endif %}
+                        </div>
+                    {% endfor %}
+                {% else %}
+                    <p class="text-xs text-slate-400">No active assessments currently scheduled for this curriculum.</p>
+                {% endif %}
+            </div>
+
+            <!-- Syllabus Accordion -->
+            <div class="bg-white rounded-3xl p-6 border border-slate-200 shadow-sm space-y-4">
+                <h3 class="font-bold text-slate-900 text-sm uppercase tracking-wider flex items-center justify-between">
+                    <span>Course Curriculum</span>
+                    <span class="text-xs text-slate-400 font-normal">{{ modules|length }} Modules</span>
+                </h3>
+
+                <div class="space-y-4">
+                    {% for m in modules %}
+                        <div class="border border-slate-200 rounded-2xl p-4 bg-slate-50/50 space-y-2.5">
+                            <div class="font-bold text-xs text-slate-900">{{ m.title }}</div>
+                            <div class="space-y-1.5 pt-1">
+                                {% for l in m.lessons %}
+                                    <a href="/trainee/courses/{{ course.id }}?active_lesson={{ l.id }}" class="flex items-center justify-between p-2 rounded-xl text-xs transition {% if current_lesson and current_lesson.id == l.id %}bg-sky-600 text-white font-bold shadow-sm{% else %}bg-white hover:bg-slate-100 text-slate-700 border border-slate-200{% endif %}">
+                                        <div class="flex items-center gap-2 truncate">
+                                            {% if l.id in completed_lessons %}
+                                                <i data-lucide="check-circle-2" class="w-4 h-4 text-emerald-500 shrink-0"></i>
+                                            {% else %}
+                                                <i data-lucide="play-circle" class="w-4 h-4 text-slate-400 shrink-0"></i>
+                                            {% endif %}
+                                            <span class="truncate">{{ l.title }}</span>
+                                        </div>
+                                        <span class="text-[10px] opacity-75 shrink-0">{{ l.duration_mins }}m</span>
+                                    </a>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <!-- Study Materials & Manuals for Trainees -->
+            {% if resources %}
+                <div class="bg-white rounded-3xl p-6 border border-slate-200 shadow-sm space-y-4">
+                    <h3 class="font-bold text-slate-900 text-sm uppercase tracking-wider flex items-center justify-between">
+                        <span class="flex items-center gap-1.5"><i data-lucide="file-text" class="w-4 h-4 text-emerald-600"></i> Reference Materials</span>
+                        <span class="text-xs text-slate-400 font-normal">{{ resources|length }} Files</span>
+                    </h3>
+                    <div class="space-y-2">
+                        {% for res in resources %}
+                            <div class="p-3 bg-slate-50 hover:bg-slate-100 rounded-xl border border-slate-200 flex items-center justify-between text-xs transition">
+                                <div class="space-y-0.5 truncate pr-2">
+                                    <div class="font-bold text-slate-900 truncate">{{ res.title }}</div>
+                                    <div class="text-[10px] text-slate-500">{{ res.resource_type }} &bull; {{ res.file_size or 'PDF' }}</div>
+                                </div>
+                                <a href="{{ res.file_url or '/static/docs/Meteorology_Material.pdf' }}" target="_blank" class="px-2.5 py-1 bg-white hover:bg-slate-200 text-slate-700 font-bold rounded-lg border border-slate-200 shrink-0 flex items-center gap-1 text-[11px] shadow-sm">
+                                    <i data-lucide="download" class="w-3 h-3"></i> View
+                                </a>
+                            </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<script>
+async function toggleLesson(lessonId) {
+    try {
+        const res = await fetch(`/trainee/lesson/${lessonId}/toggle`, { method: 'POST' });
+        const data = await res.json();
+        if (data.success) {
+            window.location.reload();
+        }
+    } catch(e) {
+        console.error(e);
+    }
+}
+</script>
+{% endblock %}
