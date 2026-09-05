@@ -1,4 +1,4 @@
-﻿import os
+import os
 import sys
 from pathlib import Path
 import uvicorn
@@ -12,7 +12,7 @@ from app.config import DATABASE_URL
 
 if __name__ == "__main__":
     port = int(os.getenv("PORT", 8000))
-    host = os.getenv("HOST", "0.0.0.0" if os.getenv("RENDER") else "127.0.0.1")
+    host = os.getenv("HOST", "0.0.0.0")
     
     db_mode = "PostgreSQL (Production/Render)" if DATABASE_URL and ("postgres" in DATABASE_URL or "postgresql" in DATABASE_URL) else "SQLite (Local Fallback)"
 
