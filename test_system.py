@@ -49,12 +49,18 @@ def run_tests():
     assert "capacity_connect_session" in cookie
     print(" [PASS] 5. 1-Click Demo Login sets secure session token for Admin")
 
-    # 6. Test Admin Dashboard with Session
+    # 6. Test Admin Dashboard & Competency Map with Session
     client.cookies.set("capacity_connect_session", resp.cookies.get("capacity_connect_session"))
     admin_dash = client.get("/admin/dashboard")
     assert admin_dash.status_code == 200
     assert "Executive Capacity Command" in admin_dash.text
     print(" [PASS] 6. Admin Command Center renders KPI metrics and charts")
+
+    # 6b. Test Competency Mapping Engine Page
+    comp_page = client.get("/admin/competency-map")
+    assert comp_page.status_code == 200
+    assert "Trainer Competency Mapping Engine" in comp_page.text
+    print(" [PASS] 6b. Competency Mapping Engine renders ranked trainers without Decimal/Float errors")
 
     # 7. Test Trainee Flow
     resp_tr = client.get("/auth/demo-login/trainee", follow_redirects=False)
