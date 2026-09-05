@@ -1,6 +1,7 @@
 import os
 import json
 import sqlite3
+from decimal import Decimal
 from contextlib import contextmanager
 from datetime import datetime, date, timedelta
 from app.config import DATABASE_PATH, DATABASE_URL
@@ -9,8 +10,16 @@ from app.auth import generate_salt, hash_password
 try:
     import psycopg2
     import psycopg2.extras
+    import psycopg2.extensions
+    # Auto-convert PostgreSQL DECIMAL/NUMERIC directly to Python float
+    DEC2FLOAT = psycopg2.extensions.new_type(
+        psycopg2.extensions.DECIMAL.values,
+        'DEC2FLOAT',
+        lambda val, cur: float(val) if val is not None else None
+    )
+    psycopg2.extensions.register_type(DEC2FLOAT)
     PSYCOPG2_AVAILABLE = True
-except ImportError:
+except Exception:
     PSYCOPG2_AVAILABLE = False
 
 def is_postgres() -> bool:
@@ -24,9 +33,10 @@ class UniversalRow:
     - Dictionary conversion: dict(row) or dict(row.items())
     - Safe .get('column_name', default)
     - Membership checks: 'col' in row
+    - Decimal normalization: converts decimal.Decimal to float seamlessly
     """
     def __init__(self, values_list, columns_map):
-        self._values = list(values_list)
+        self._values = [float(v) if isinstance(v, Decimal) else v for v in values_list]
         self._columns = list(columns_map)
         self._map = {str(col).lower(): i for i, col in enumerate(columns_map)}
 
@@ -171,6 +181,10 @@ def get_db():
         if not PSYCOPG2_AVAILABLE:
             raise RuntimeError("psycopg2-binary is required for PostgreSQL. Install with: pip install psycopg2-binary")
         conn = psycopg2.connect(DATABASE_URL)
+        try:
+            psycopg2.extensions.register_type(DEC2FLOAT, conn)
+        except Exception:
+            pass
         wrapper = PostgresConnectionWrapper(conn)
         try:
             yield wrapper

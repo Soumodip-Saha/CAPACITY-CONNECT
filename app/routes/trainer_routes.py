@@ -352,7 +352,7 @@ def trainer_analytics(request: Request):
             JOIN quizzes q ON q.id = qq.quiz_id
             LEFT JOIN quiz_attempts qa ON qa.quiz_id = q.id
             WHERE q.trainer_id = ? OR ? = 'admin'
-            GROUP BY qq.id
+            GROUP BY qq.id, qq.question_text, qq.correct_option, q.title
             LIMIT 10
         """, (user["id"], user["role"]))
         question_stats = [dict(row) for row in cursor.fetchall()]

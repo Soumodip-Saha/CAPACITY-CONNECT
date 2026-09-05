@@ -45,6 +45,12 @@ async def global_exception_handler(request: Request, exc: Exception):
     import traceback
     err_trace = traceback.format_exc()
     print(f"ERROR on {request.method} {request.url.path}: {exc}\n{err_trace}", file=sys.stderr)
+    
+    # Extract last code frame for debugging clarity
+    tb = traceback.extract_tb(exc.__traceback__)
+    last_frame = tb[-1] if tb else None
+    frame_info = f"{Path(last_frame.filename).name}:{last_frame.lineno} in {last_frame.name}" if last_frame else "Unknown"
+
     return HTMLResponse(
         f"""
         <!DOCTYPE html>
@@ -63,8 +69,12 @@ async def global_exception_handler(request: Request, exc: Exception):
                         <p class="text-xs text-slate-400">An unexpected exception was intercepted by the portal</p>
                     </div>
                 </div>
-                <div class="bg-slate-950 p-4 rounded-xl font-mono text-xs text-rose-300 overflow-x-auto border border-slate-800">
-                    <strong>{type(exc).__name__}:</strong> {str(exc)}
+                <div class="bg-slate-950 p-4 rounded-xl font-mono text-xs text-rose-300 overflow-x-auto border border-slate-800 space-y-2">
+                    <div><strong class="text-white">{type(exc).__name__}:</strong> {str(exc)}</div>
+                    <div class="pt-2 border-t border-slate-800 text-[11px] text-slate-400">
+                        <span class="text-slate-500">Route:</span> <code class="text-amber-400">{request.method} {request.url.path}</code><br>
+                        <span class="text-slate-500">Source:</span> <code class="text-sky-400">{frame_info}</code>
+                    </div>
                 </div>
                 <div class="pt-2 flex gap-3">
                     <a href="/" class="px-4 py-2 bg-sky-600 hover:bg-sky-500 text-white rounded-xl text-xs font-bold transition">Return to Home</a>
