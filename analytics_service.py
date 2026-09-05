@@ -68,14 +68,14 @@ def calculate_trainer_competency(
             domain_score = min(25.0, domain_score)
 
             # 3. Experience score (max 15 points)
-            exp = t.get("experience_years") or 0
+            exp = float(t.get("experience_years") or 0)
             if exp >= min_experience:
                 exp_score = min(15.0, (exp / 20.0) * 15.0)
             else:
                 exp_score = max(0.0, (exp / max(1, min_experience)) * 8.0)
 
             # 4. Feedback & Track record score (max 10 points)
-            avg_rating = t.get("avg_rating") or 4.5
+            avg_rating = float(t.get("avg_rating") or 4.5)
             rating_score = (avg_rating / 5.0) * 10.0
 
             total_score = round(min(100.0, skill_score + domain_score + exp_score + rating_score), 1)
@@ -192,7 +192,7 @@ def get_admin_dashboard_stats() -> Dict[str, Any]:
 
         cursor.execute("SELECT COUNT(*) FROM quiz_attempts WHERE is_passed = 1")
         passed_attempts = cursor.fetchone()[0]
-        pass_rate = round((passed_attempts / total_attempts * 100), 1) if total_attempts > 0 else 0.0
+        pass_rate = round((float(passed_attempts) / float(total_attempts) * 100), 1) if total_attempts and total_attempts > 0 else 0.0
 
         # Domain distribution
         cursor.execute("""
@@ -267,7 +267,7 @@ def get_trainer_dashboard_stats(trainer_id: int) -> Dict[str, Any]:
 
         # Avg Rating
         cursor.execute("SELECT COALESCE(AVG(rating_trainer), 5.0) FROM course_feedback WHERE trainer_id = ?", (trainer_id,))
-        avg_rating = round(cursor.fetchone()[0], 1)
+        avg_rating = round(float(cursor.fetchone()[0] or 5.0), 1)
 
         # Recent attempts
         cursor.execute(f"""
