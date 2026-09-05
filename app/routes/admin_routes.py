@@ -190,7 +190,17 @@ def manage_announcements(request: Request):
             LEFT JOIN users u ON u.id = a.published_by
             ORDER BY a.created_at DESC
         """)
-        announcements = [dict(row) for row in cursor.fetchall()]
+        announcements = []
+        for row in cursor.fetchall():
+            d = dict(row)
+            raw = d.get("created_at")
+            if hasattr(raw, "strftime"):
+                d["created_at_display"] = raw.strftime("%Y-%m-%d")
+            elif raw:
+                d["created_at_display"] = str(raw)[:10]
+            else:
+                d["created_at_display"] = "Recent"
+            announcements.append(d)
 
     return templates.TemplateResponse(request=request, name="admin/announcements.html", context={
         "request": request,

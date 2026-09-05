@@ -62,6 +62,10 @@ def trainer_dashboard(request: Request):
         """, (user["id"],))
         feedbacks = [dict(row) for row in cursor.fetchall()]
 
+        # Announcements
+        cursor.execute("SELECT * FROM announcements WHERE is_active = 1 ORDER BY created_at DESC LIMIT 3")
+        announcements = [dict(row) for row in cursor.fetchall()]
+
     return templates.TemplateResponse(request=request, name="trainer/dashboard.html", context={
         "request": request,
         "user": user,
@@ -69,7 +73,8 @@ def trainer_dashboard(request: Request):
         "trainees": trainees,
         "quizzes": quizzes,
         "resources": resources,
-        "feedbacks": feedbacks
+        "feedbacks": feedbacks,
+        "announcements": announcements
     })
 
 @router.get("/courses", response_class=HTMLResponse)

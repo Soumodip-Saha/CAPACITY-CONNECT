@@ -34,9 +34,15 @@ class UniversalRow:
     - Safe .get('column_name', default)
     - Membership checks: 'col' in row
     - Decimal normalization: converts decimal.Decimal to float seamlessly
+    - Datetime normalization: converts datetime/date to ISO string seamlessly
     """
     def __init__(self, values_list, columns_map):
-        self._values = [float(v) if isinstance(v, Decimal) else v for v in values_list]
+        self._values = [
+            float(v) if isinstance(v, Decimal) else
+            v.strftime("%Y-%m-%d %H:%M:%S") if isinstance(v, (datetime, date)) else
+            v
+            for v in values_list
+        ]
         self._columns = list(columns_map)
         self._map = {str(col).lower(): i for i, col in enumerate(columns_map)}
 
@@ -728,15 +734,63 @@ def ensure_target_courses_seeded(cursor, trainer_ids=None):
 
     return course_map
 
+DEFAULT_ANNOUNCEMENTS = [
+    (
+        "National Capacity Building Workshop on AI/ML in Monsoon Prediction 2026",
+        "The Ministry of Earth Sciences (MoES) and India Meteorological Department (IMD) announce a 5-day specialized capacity building program on applying Deep Learning to medium-range monsoon rainfall forecasting. Nominations open for IMD, NCMRWF, and IITM scientists.",
+        "Workshop", "Urgent"
+    ),
+    (
+        "Operational Commissioning of 10 New X-Band Doppler Radars in Western Ghats",
+        "Under the Mission Mausam initiative, IMD has commissioned 10 high-resolution X-band Doppler Weather Radars along the Western Ghats. Trainees are encouraged to enroll in 'IMD-RAD-101' for operational interpretation certification.",
+        "Achievement", "Important"
+    ),
+    (
+        "Launch of New Specialized Course: Tropical Cyclogenesis & Track Forecasting (IMD-CYC-301)",
+        "A new advanced training module designed by Dr. R. Venkatesh is now live on CAPACITY CONNECT. Staff from Regional Cyclone Warning Centers are mandated to complete certification by Q3 2026.",
+        "New Course", "Normal"
+    ),
+    (
+        "MoES Circular: Mandatory Competency Mapping for Senior Meteorological Trainers",
+        "All Scientist-D and above personnel across MoES institutions are requested to review and update their domain skills and research publications on the portal to facilitate automated Trainer Competency Mapping for upcoming national programs.",
+        "Circular", "Important"
+    ),
+    (
+        "Himansh High-Altitude Glaciology & Cryosphere Summer Field School 2026",
+        "NCPOR Goa opens applications for field glaciology and cryosphere observing systems training at Himansh Station, Spiti. Priority access granted to personnel certified in 'NCPOR-POL-401'.",
+        "Circular", "Normal"
+    )
+]
+
+def ensure_announcements_seeded(cursor, admin_id=None):
+    """
+    Idempotent seeding of official MoES announcements and circulars.
+    Guarantees bulletins are present in both fresh and existing databases.
+    """
+    cursor.execute("SELECT COUNT(*) FROM announcements")
+    res = cursor.fetchone()
+    count = res[0] if res else 0
+    if count == 0:
+        if not admin_id:
+            cursor.execute("SELECT id FROM users WHERE role = 'admin' LIMIT 1")
+            row = cursor.fetchone()
+            admin_id = row[0] if row else 1
+        for title, content, cat, prio in DEFAULT_ANNOUNCEMENTS:
+            cursor.execute("""
+                INSERT INTO announcements (title, content, category, priority, published_by, is_active)
+                VALUES (?, ?, ?, ?, ?, 1)
+            """, (title, content, cat, prio, admin_id))
+
 def seed_db():
     with get_db() as db:
         cursor = db.cursor()
         
         cursor.execute("SELECT COUNT(*) as count FROM users")
         res = cursor.fetchone()
-        count = res[0] if isinstance(res, (tuple, list)) else (res["count"] if hasattr(res, "__getitem__") else 0)
+        count = res[0] if res else 0
         if count > 0:
             ensure_target_courses_seeded(cursor)
+            ensure_announcements_seeded(cursor)
             return
 
         db_type = "PostgreSQL" if is_postgres() else "SQLite"
@@ -1040,33 +1094,6 @@ def seed_db():
             """, (t_id, title, r_type, cat, f_url, f_size, desc))
 
         # 9. Seed Announcements
-        announcements = [
-            (
-                "National Capacity Building Workshop on AI/ML in Monsoon Prediction 2026",
-                "The Ministry of Earth Sciences (MoES) and India Meteorological Department (IMD) announce a 5-day specialized capacity building program on applying Deep Learning to medium-range monsoon rainfall forecasting. Nominations open for IMD, NCMRWF, and IITM scientists.",
-                "Workshop", "Urgent", admin_id
-            ),
-            (
-                "Operational Commissioning of 10 New X-Band Doppler Radars in Western Ghats",
-                "Under the Mission Mausam initiative, IMD has commissioned 10 high-resolution X-band Doppler Weather Radars along the Western Ghats. Trainees are encouraged to enroll in 'IMD-RAD-101' for operational interpretation certification.",
-                "Achievement", "Important", admin_id
-            ),
-            (
-                "Launch of New Specialized Course: Tropical Cyclogenesis & Track Forecasting (IMD-CYC-301)",
-                "A new advanced training module designed by Dr. R. Venkatesh is now live on CAPACITY CONNECT. Staff from Regional Cyclone Warning Centers are mandated to complete certification by Q3 2026.",
-                "New Course", "Normal", admin_id
-            ),
-            (
-                "MoES Circular: Mandatory Competency Mapping for Senior Meteorological Trainers",
-                "All Scientist-D and above personnel across MoES institutions are requested to review and update their domain skills and research publications on the portal to facilitate automated Trainer Competency Mapping for upcoming national programs.",
-                "Circular", "Important", admin_id
-            )
-        ]
-
-        for title, content, cat, prio, pub_by in announcements:
-            cursor.execute("""
-                INSERT INTO announcements (title, content, category, priority, published_by)
-                VALUES (?, ?, ?, ?, ?)
-            """, (title, content, cat, prio, pub_by))
+        ensure_announcements_seeded(cursor, admin_id)
 
         print(f"CAPACITY CONNECT {db_type} database successfully initialized and seeded!")

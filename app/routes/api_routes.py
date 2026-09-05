@@ -34,8 +34,17 @@ def api_admin_charts():
         cursor = db.cursor()
         
         # Domain distribution
-        cursor.execute("SELECT domain, COUNT(*) as count FROM courses GROUP BY domain")
-        domains = [dict(row) for row in cursor.fetchall()]
+        cursor.execute("SELECT domain, COUNT(*) as count FROM courses GROUP BY domain ORDER BY count DESC, domain ASC")
+        domains_raw = [dict(row) for row in cursor.fetchall()]
+        total_courses_count = sum(d["count"] for d in domains_raw) if domains_raw else 1
+        domains = [
+            {
+                "domain": d["domain"],
+                "count": d["count"],
+                "percentage": round((float(d["count"]) / float(total_courses_count)) * 100.0, 1)
+            }
+            for d in domains_raw
+        ]
 
         # Regional Observatory Participation (Realistic IMD Regional Meteorological Centers)
         regional_stats = [
@@ -59,6 +68,8 @@ def api_admin_charts():
 
         return JSONResponse({
             "domains": domains,
+            "total_courses": total_courses_count,
+            "total_domains": len(domains),
             "regional_stats": regional_stats,
             "monthly_trends": monthly_trends
         })

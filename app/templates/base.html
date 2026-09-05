@@ -86,6 +86,9 @@
                     <a href="/trainee/courses" class="px-3 py-2 rounded-lg text-sm font-medium hover:bg-moes-800 hover:text-white transition flex items-center gap-1.5">
                         <i data-lucide="book-open" class="w-4 h-4"></i> Course Catalog
                     </a>
+                    <a href="/bulletins" class="px-3 py-2 rounded-lg text-sm font-medium hover:bg-moes-800 hover:text-white transition flex items-center gap-1.5">
+                        <i data-lucide="bell" class="w-4 h-4 text-amber-400"></i> Bulletins
+                    </a>
 
                     {% if user %}
                         {% if user.role == 'trainee' %}
@@ -119,7 +122,7 @@
                                 <i data-lucide="git-merge" class="w-4 h-4"></i> Competency Map
                             </a>
                             <a href="/admin/announcements" class="px-3 py-2 rounded-lg text-sm font-medium hover:bg-moes-800 hover:text-white transition flex items-center gap-1.5">
-                                <i data-lucide="bell" class="w-4 h-4"></i> Bulletins
+                                <i data-lucide="megaphone" class="w-4 h-4 text-purple-400"></i> Manage Bulletins
                             </a>
                         {% endif %}
 
@@ -160,6 +163,7 @@
         <div id="mobile-menu" class="hidden md:hidden bg-moes-navy border-t border-slate-800 px-4 pt-2 pb-6 space-y-2 text-sm">
             <a href="/" class="block py-2 px-3 rounded hover:bg-slate-800">Home</a>
             <a href="/trainee/courses" class="block py-2 px-3 rounded hover:bg-slate-800">Course Catalog</a>
+            <a href="/bulletins" class="block py-2 px-3 rounded hover:bg-slate-800 text-amber-300 font-medium">Bulletins & Circulars</a>
             {% if user %}
                 {% if user.role == 'trainee' %}
                     <a href="/trainee/dashboard" class="block py-2 px-3 rounded bg-sky-900/50 text-sky-200">Trainee Dashboard</a>
@@ -172,6 +176,7 @@
                     <a href="/admin/dashboard" class="block py-2 px-3 rounded bg-purple-900/50 text-purple-200">Admin Dashboard</a>
                     <a href="/admin/users" class="block py-2 px-3 rounded hover:bg-slate-800">User Approvals</a>
                     <a href="/admin/competency-map" class="block py-2 px-3 rounded text-amber-300 font-bold">Competency Map</a>
+                    <a href="/admin/announcements" class="block py-2 px-3 rounded text-purple-300 font-medium">Manage Bulletins</a>
                 {% endif %}
                 <div class="pt-3 border-t border-slate-800 flex justify-between items-center">
                     <span class="text-xs text-slate-400">Signed in as <strong class="text-white">{{ user.full_name }}</strong></span>

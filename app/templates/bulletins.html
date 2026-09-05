@@ -1,0 +1,119 @@
+{% extends "base.html" %}
+
+{% block title %}Official Bulletins & Circulars - MoES / IMD CAPACITY CONNECT{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-8">
+    
+    <!-- Title & Action Bar -->
+    <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+        <div>
+            <div class="flex items-center gap-2">
+                <span class="text-xs font-bold uppercase tracking-wider text-purple-700 bg-purple-50 px-2.5 py-1 rounded-full border border-purple-200">
+                    Official Gazette & Communications
+                </span>
+                <span class="text-xs text-slate-400 font-mono">{{ announcements|length }} Published Bulletins</span>
+            </div>
+            <h1 class="text-3xl font-black text-slate-900 mt-2 tracking-tight">MoES & IMD Bulletins & Circulars</h1>
+            <p class="text-xs sm:text-sm text-slate-500 mt-1">National capacity building workshops, technical circulars, mission achievements, and curriculum updates.</p>
+        </div>
+
+        <div class="flex items-center gap-3 w-full md:w-auto">
+            <!-- Search Form -->
+            <form action="/bulletins" method="get" class="flex gap-2 w-full md:w-auto">
+                <input type="hidden" name="category" value="{{ selected_category }}">
+                <div class="relative w-full sm:w-72">
+                    <i data-lucide="search" class="w-4 h-4 text-slate-400 absolute left-3 top-2.5"></i>
+                    <input type="text" name="search" value="{{ search }}" placeholder="Search circulars, workshops..." class="w-full pl-9 pr-4 py-2 text-xs border border-slate-300 rounded-xl focus:ring-2 focus:ring-purple-500 focus:outline-none bg-white">
+                </div>
+                <button type="submit" class="px-4 py-2 bg-purple-600 hover:bg-purple-500 text-white font-bold text-xs rounded-xl shadow transition">Search</button>
+            </form>
+
+            {% if user and user.role == 'admin' %}
+                <a href="/admin/announcements" class="px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs rounded-xl shadow transition flex items-center gap-1.5 whitespace-nowrap">
+                    <i data-lucide="plus-circle" class="w-4 h-4 text-purple-400"></i> Manage Notices
+                </a>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Category Filter Pills -->
+    <div class="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-none">
+        <a href="/bulletins{% if search %}?search={{ search|urlencode }}{% endif %}" class="px-3.5 py-1.5 rounded-full text-xs font-bold whitespace-nowrap transition {% if not selected_category or selected_category == 'all' %}bg-purple-600 text-white shadow{% else %}bg-white border border-slate-200 text-slate-700 hover:bg-slate-50{% endif %}">
+            All Bulletins ({{ announcements|length }})
+        </a>
+        {% for cat in categories %}
+            <a href="/bulletins?category={{ cat|urlencode }}{% if search %}&search={{ search|urlencode }}{% endif %}" class="px-3.5 py-1.5 rounded-full text-xs font-bold whitespace-nowrap transition {% if selected_category == cat %}bg-purple-600 text-white shadow{% else %}bg-white border border-slate-200 text-slate-700 hover:bg-slate-50{% endif %}">
+                {{ cat }}
+            </a>
+        {% endfor %}
+    </div>
+
+    <!-- Announcements Grid -->
+    {% if announcements %}
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {% for a in announcements %}
+                <div class="bg-white rounded-3xl p-6 sm:p-7 border border-slate-200 shadow-sm hover:border-slate-300 hover:shadow-md transition flex flex-col justify-between space-y-4">
+                    <div class="space-y-3">
+                        <div class="flex justify-between items-center gap-2">
+                            <span class="text-[10px] font-bold px-2.5 py-0.5 rounded-full uppercase border
+                                {% if a.category == 'Workshop' %}bg-purple-50 text-purple-800 border-purple-200
+                                {% elif a.category == 'Circular' %}bg-blue-50 text-blue-800 border-blue-200
+                                {% elif a.category == 'Achievement' %}bg-emerald-50 text-emerald-800 border-emerald-200
+                                {% elif a.category == 'New Course' %}bg-sky-50 text-sky-800 border-sky-200
+                                {% else %}bg-slate-100 text-slate-700 border-slate-200{% endif %}">
+                                {{ a.category }}
+                            </span>
+                            <span class="text-[10px] font-bold px-2 py-0.5 rounded
+                                {% if a.priority == 'Urgent' %}bg-rose-100 text-rose-800 border border-rose-200
+                                {% elif a.priority == 'Important' %}bg-amber-100 text-amber-800 border border-amber-200
+                                {% else %}bg-slate-100 text-slate-600{% endif %}">
+                                {% if a.priority == 'Urgent' %}&bull; {% endif %}{{ a.priority }}
+                            </span>
+                        </div>
+
+                        <h3 class="text-base font-bold text-slate-900 leading-snug">{{ a.title }}</h3>
+                        <p class="text-xs text-slate-600 leading-relaxed">{{ a.content }}</p>
+                    </div>
+
+                    <div class="pt-4 border-t border-slate-100 flex justify-between items-center text-xs">
+                        <div class="flex items-center gap-2 text-[11px] text-slate-500">
+                            <i data-lucide="building-2" class="w-3.5 h-3.5 text-slate-400"></i>
+                            <span class="font-medium truncate max-w-[150px]">{{ a.author_name or 'MoES Training Cell' }}</span>
+                        </div>
+                        <span class="text-slate-400 font-mono text-[11px]">
+                            {{ a.created_at_display or (a.created_at|string)[:10] }}
+                        </span>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    {% else %}
+        <div class="bg-slate-50 rounded-3xl p-12 border border-dashed border-slate-300 text-center space-y-3">
+            <i data-lucide="inbox" class="w-10 h-10 text-slate-400 mx-auto"></i>
+            <h3 class="text-base font-bold text-slate-800">No Bulletins Matched Your Query</h3>
+            <p class="text-xs text-slate-500 max-w-md mx-auto">Try resetting filters or searching with different keywords like 'workshop', 'radar', 'cyclone', or 'circular'.</p>
+            <a href="/bulletins" class="inline-block px-4 py-2 bg-slate-900 text-white text-xs font-bold rounded-xl mt-2">
+                Clear Filters & Show All
+            </a>
+        </div>
+    {% endif %}
+
+    <!-- Bottom Directorate Banner -->
+    <div class="bg-gradient-to-r from-moes-navy via-slate-900 to-purple-950 rounded-3xl p-6 sm:p-8 text-white shadow-lg flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+        <div class="space-y-1">
+            <div class="flex items-center gap-2">
+                <i data-lucide="shield-check" class="w-5 h-5 text-purple-400"></i>
+                <h3 class="font-bold text-base">MoES Official Information Dissemination Protocol</h3>
+            </div>
+            <p class="text-xs text-slate-300 max-w-2xl">
+                Circulars published here are authenticated by the Ministry of Earth Sciences and India Meteorological Department Training Directorate for cross-institutional compliance.
+            </p>
+        </div>
+        <a href="/trainee/courses" class="px-5 py-2.5 bg-purple-600 hover:bg-purple-500 text-white font-bold text-xs rounded-xl shadow whitespace-nowrap transition">
+            Explore Domain Curricula &rarr;
+        </a>
+    </div>
+
+</div>
+{% endblock %}

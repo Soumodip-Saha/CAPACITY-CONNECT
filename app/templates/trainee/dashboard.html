@@ -212,6 +212,38 @@
                     <p class="text-xs text-slate-400 text-center py-4">Score &ge; 70% in course assessments to automatically generate verifiable MoES certificates.</p>
                 {% endif %}
             </div>
+
+            <!-- Official Bulletins & Circulars -->
+            <div class="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm space-y-4">
+                <div class="flex justify-between items-center border-b border-slate-100 pb-3">
+                    <h3 class="font-bold text-slate-900 text-sm flex items-center gap-2">
+                        <i data-lucide="bell" class="w-4 h-4 text-purple-600"></i> MoES Bulletins & Notices
+                    </h3>
+                    <a href="/bulletins" class="text-xs font-bold text-purple-700 hover:underline">View All &rarr;</a>
+                </div>
+
+                {% if announcements %}
+                    <div class="space-y-3">
+                        {% for a in announcements %}
+                            <div class="p-3.5 rounded-xl border border-slate-200 bg-slate-50/60 hover:bg-slate-50 transition space-y-1.5">
+                                <div class="flex justify-between items-center">
+                                    <span class="text-[9px] font-bold px-2 py-0.5 rounded-full uppercase border
+                                        {% if a.category == 'Workshop' %}bg-purple-50 text-purple-800 border-purple-200
+                                        {% elif a.category == 'Circular' %}bg-blue-50 text-blue-800 border-blue-200
+                                        {% else %}bg-slate-100 text-slate-700 border-slate-200{% endif %}">
+                                        {{ a.category }}
+                                    </span>
+                                    <span class="text-[10px] text-slate-400 font-mono">{{ (a.created_at|string)[:10] }}</span>
+                                </div>
+                                <div class="font-bold text-slate-900 text-xs leading-snug">{{ a.title }}</div>
+                                <p class="text-[11px] text-slate-500 line-clamp-2 leading-relaxed">{{ a.content }}</p>
+                            </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <p class="text-xs text-slate-400 text-center py-4">No active notices.</p>
+                {% endif %}
+            </div>
         </div>
     </div>
 </div>

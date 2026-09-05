@@ -163,9 +163,57 @@ def index_homepage(request: Request):
         "stats": {
             "trainees": total_trainees + 180,
             "trainers": total_trainers + 35,
-            "courses": total_courses or 12,
+            "courses": total_courses or 20,
             "certificates": total_certificates + 240
         }
+    })
+
+@app.get("/bulletins", response_class=HTMLResponse)
+def public_bulletins(request: Request, category: str = "", search: str = ""):
+    user = get_current_user_from_request(request)
+    announcements = []
+    categories = []
+
+    with get_db() as db:
+        cursor = db.cursor()
+        query = """
+            SELECT a.*, u.full_name as author_name
+            FROM announcements a
+            LEFT JOIN users u ON u.id = a.published_by
+            WHERE a.is_active = 1
+        """
+        params = []
+        if category and category.strip().lower() not in ("", "all"):
+            query += " AND LOWER(a.category) = LOWER(?)"
+            params.append(category.strip())
+        if search and search.strip():
+            query += " AND (LOWER(a.title) LIKE ? OR LOWER(a.content) LIKE ?)"
+            term = f"%{search.strip().lower()}%"
+            params.extend([term, term])
+        query += " ORDER BY a.created_at DESC"
+        cursor.execute(query, tuple(params))
+        
+        for row in cursor.fetchall():
+            d = dict(row)
+            raw = d.get("created_at")
+            if hasattr(raw, "strftime"):
+                d["created_at_display"] = raw.strftime("%Y-%m-%d")
+            elif raw:
+                d["created_at_display"] = str(raw)[:10]
+            else:
+                d["created_at_display"] = "Recent"
+            announcements.append(d)
+
+        cursor.execute("SELECT DISTINCT category FROM announcements WHERE is_active = 1 ORDER BY category ASC")
+        categories = [row[0] for row in cursor.fetchall()]
+
+    return templates.TemplateResponse(request=request, name="bulletins.html", context={
+        "request": request,
+        "user": user,
+        "announcements": announcements,
+        "categories": categories,
+        "selected_category": category,
+        "search": search
     })
 
 @app.get("/verify/certificate/{cert_id}", response_class=HTMLResponse)
