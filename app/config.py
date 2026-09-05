@@ -1,4 +1,4 @@
-﻿import os
+import os
 from pathlib import Path
 from dotenv import load_dotenv
 
@@ -11,9 +11,14 @@ load_dotenv(BASE_DIR / ".env")
 
 # Database Configuration (PostgreSQL / SQLite fallback)
 DATABASE_URL = os.getenv("DATABASE_URL")
-if DATABASE_URL and DATABASE_URL.startswith("postgres://"):
-    # Normalize Render postgres:// URL scheme to postgresql://
-    DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql://", 1)
+if DATABASE_URL:
+    DATABASE_URL = DATABASE_URL.strip()
+    if DATABASE_URL.startswith("postgres://"):
+        # Normalize Render's postgres:// URL scheme to postgresql://
+        DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql://", 1)
+    if "sslmode=" not in DATABASE_URL and "localhost" not in DATABASE_URL and "127.0.0.1" not in DATABASE_URL:
+        sep = "&" if "?" in DATABASE_URL else "?"
+        DATABASE_URL = f"{DATABASE_URL}{sep}sslmode=require"
 
 DATABASE_PATH = BASE_DIR / "capacity_connect.db"
 

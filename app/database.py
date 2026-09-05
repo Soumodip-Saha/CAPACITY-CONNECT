@@ -16,6 +16,59 @@ except ImportError:
 def is_postgres() -> bool:
     return bool(DATABASE_URL and ("postgres" in DATABASE_URL or "postgresql" in DATABASE_URL))
 
+class UniversalRow:
+    """
+    Universal row wrapper providing identical behavior to sqlite3.Row in PostgreSQL:
+    - Numeric index access: row[0], row[1]
+    - Case-insensitive column name access: row['column_name']
+    - Dictionary conversion: dict(row) or dict(row.items())
+    - Safe .get('column_name', default)
+    - Membership checks: 'col' in row
+    """
+    def __init__(self, values_list, columns_map):
+        self._values = list(values_list)
+        self._columns = list(columns_map)
+        self._map = {str(col).lower(): i for i, col in enumerate(columns_map)}
+
+    def __getitem__(self, key):
+        if isinstance(key, (int, slice)):
+            return self._values[key]
+        if isinstance(key, str):
+            idx = self._map.get(key.lower())
+            if idx is not None:
+                return self._values[idx]
+            raise KeyError(key)
+        raise TypeError(f"Row indices must be integers or strings, not {type(key)}")
+
+    def get(self, key, default=None):
+        try:
+            return self[key]
+        except (KeyError, IndexError):
+            return default
+
+    def keys(self):
+        return self._columns
+
+    def values(self):
+        return self._values
+
+    def items(self):
+        return zip(self._columns, self._values)
+
+    def __iter__(self):
+        return iter(self._columns)
+
+    def __len__(self):
+        return len(self._values)
+
+    def __contains__(self, key):
+        if isinstance(key, str):
+            return key.lower() in self._map
+        return key in self._values
+
+    def __repr__(self):
+        return f"<Row {dict(self.items())}>"
+
 class PostgresCursorWrapper:
     def __init__(self, raw_cursor):
         self.cursor = raw_cursor
@@ -23,6 +76,14 @@ class PostgresCursorWrapper:
 
     def _convert_query(self, query: str) -> str:
         return query.replace("?", "%s")
+
+    def _wrap_row(self, raw_row):
+        if raw_row is None:
+            return None
+        if self.cursor.description:
+            col_names = [col[0] for col in self.cursor.description]
+            return UniversalRow(raw_row, col_names)
+        return raw_row
 
     def execute(self, query, params=None):
         pg_query = self._convert_query(query)
@@ -37,13 +98,8 @@ class PostgresCursorWrapper:
                 else:
                     self.cursor.execute(pg_query_with_ret)
                 res = self.cursor.fetchone()
-                if res:
-                    if isinstance(res, dict):
-                        self.lastrowid = res.get("id")
-                    elif isinstance(res, (tuple, list)):
-                        self.lastrowid = res[0]
-                    elif hasattr(res, "__getitem__"):
-                        self.lastrowid = res["id"]
+                if res is not None:
+                    self.lastrowid = res[0]
             except Exception:
                 if params:
                     self.cursor.execute(pg_query, params)
@@ -62,13 +118,22 @@ class PostgresCursorWrapper:
         return self.cursor.executemany(pg_query, seq_of_params)
 
     def fetchone(self):
-        return self.cursor.fetchone()
+        raw = self.cursor.fetchone()
+        return self._wrap_row(raw)
 
     def fetchall(self):
-        return self.cursor.fetchall()
+        raw_rows = self.cursor.fetchall()
+        if not raw_rows:
+            return []
+        col_names = [col[0] for col in self.cursor.description] if self.cursor.description else []
+        return [UniversalRow(r, col_names) for r in raw_rows]
 
     def fetchmany(self, size=None):
-        return self.cursor.fetchmany(size) if size else self.cursor.fetchmany()
+        raw_rows = self.cursor.fetchmany(size) if size else self.cursor.fetchmany()
+        if not raw_rows:
+            return []
+        col_names = [col[0] for col in self.cursor.description] if self.cursor.description else []
+        return [UniversalRow(r, col_names) for r in raw_rows]
 
     @property
     def rowcount(self):
@@ -78,14 +143,18 @@ class PostgresCursorWrapper:
         return self.cursor.close()
 
     def __iter__(self):
-        return iter(self.cursor)
+        while True:
+            row = self.fetchone()
+            if row is None:
+                break
+            yield row
 
 class PostgresConnectionWrapper:
     def __init__(self, raw_conn):
         self.conn = raw_conn
 
     def cursor(self):
-        return PostgresCursorWrapper(self.conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor))
+        return PostgresCursorWrapper(self.conn.cursor())
 
     def commit(self):
         return self.conn.commit()
