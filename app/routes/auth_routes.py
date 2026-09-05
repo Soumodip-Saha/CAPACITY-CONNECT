@@ -122,6 +122,7 @@ def handle_register(
     password: str = Form(...),
     full_name: str = Form(...),
     role: str = Form("trainee"),
+    admin_code: str = Form(""),
     designation: str = Form(""),
     department: str = Form(""),
     qualifications: str = Form(""),
@@ -130,12 +131,24 @@ def handle_register(
     interests: str = Form(""),
     bio: str = Form("")
 ):
-    role = role.lower()
-    if role not in ["trainee", "trainer"]:
+    role = role.lower().strip()
+    if role not in ["trainee", "trainer", "admin"]:
         role = "trainee"
 
-    # Trainers require admin approval, trainees are activated immediately
-    initial_status = "pending_approval" if role == "trainer" else "active"
+    # Determine activation status:
+    # Trainees are activated immediately.
+    # Admins with valid clearance passcode (e.g. MOES-ADMIN-2026, IMD-ADMIN-2026, or ADMIN@123) are activated immediately.
+    # Other admins and trainers require administrative approval.
+    if role == "admin":
+        valid_codes = ["MOES-ADMIN-2026", "IMD-ADMIN-2026", "ADMIN@123"]
+        if admin_code.strip().upper() in valid_codes:
+            initial_status = "active"
+        else:
+            initial_status = "pending_approval"
+    elif role == "trainer":
+        initial_status = "pending_approval"
+    else:
+        initial_status = "active"
 
     with get_db() as db:
         cursor = db.cursor()
@@ -162,16 +175,21 @@ def handle_register(
         new_user_id = cursor.lastrowid
 
     if initial_status == "pending_approval":
+        if role == "admin":
+            msg = "Admin registration submitted successfully! Your credentials have been queued for MoES Training Directorate verification (or re-register with official passcode 'MOES-ADMIN-2026' for instant administrative clearance)."
+        else:
+            msg = "Trainer registration submitted successfully! Your credentials have been forwarded to the MoES Training Directorate for administrative verification and approval."
         return templates.TemplateResponse(request=request, name="auth/register.html", context={
                 "request": request,
                 "error": None,
-                "success": "Trainer registration submitted successfully! Your credentials have been forwarded to the MoES Training Directorate for administrative verification and approval."
+                "success": msg
             }
         )
     else:
-        # Auto-login for trainee
+        # Auto-login for active users (trainees and authorized admins)
         token = create_session_token(new_user_id, email.strip().lower(), role)
-        response = RedirectResponse(url="/trainee/dashboard", status_code=303)
+        target_url = "/admin/dashboard" if role == "admin" else "/trainee/dashboard"
+        response = RedirectResponse(url=target_url, status_code=303)
         response.set_cookie(
             key=SESSION_COOKIE_NAME,
             value=token,

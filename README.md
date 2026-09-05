@@ -17,20 +17,28 @@
 ### 1. 🛡️ Role-Based Authentication & Access Control
 - **Three Distinct User Personas**:
   - **Trainee**: Operational meteorologists, observers, scientific assistants, and researchers.
-  - **Trainer**: Senior scientists (Scientist-E/F/G), university professors, and domain experts.
-  - **Admin**: Director of Capacity Building & Training, MoES/IMD administrative authorities.
-- **Administrative Approval Gate**: New trainers undergo administrative verification before publishing curricula.
+- **Three Distinct User Personas & Registration**:
+  - **Trainee**: Operational meteorologists, observers, scientific assistants, and researchers (instant activation).
+  - **Trainer**: Senior scientists (Scientist-E/F/G), university professors, and domain experts (queued for administrative verification).
+  - **Admin**: Director of Capacity Building, MoES/IMD administrative authorities (supports official security token `MOES-ADMIN-2026` for instant clearance, or queued for Director review).
+- **Administrative Clearance & Approval Gate**: New trainers and unverified admins undergo administrative review before elevated permissions are granted.
 - **1-Click Demo Persona Switcher**: Instant evaluation modal to switch between Admin, Trainer, and Trainee accounts.
 
 ### 2. 🎓 Trainee Learning & Certification Journey
 - **Professional Profile Dossier**: Comprehensive record of qualifications, observatory assignments, years of experience, core competencies, and earned certificates.
-- **Domain Curricula Discovery**: Filter and search across specialized MoES disciplines:
-  - Numerical Weather Prediction (NWP) & High-Resolution Modeling
-  - Doppler Weather Radar (DWR) Principles & Severe Storm Nowcasting
-  - Satellite Meteorology & INSAT-3DR Multi-Spectral Product Analysis
-  - Tropical Cyclogenesis, Track Forecasting & Early Warnings
-  - Operational Agrometeorological Advisory Services (AAS & GKMS)
-  - Seismological Network Monitoring & Tsunami Warning Systems
+- **Domain Curricula Discovery**: Filter and search across 12 specialized MoES disciplines:
+  - Numerical Weather Prediction (NWP) & High-Resolution Modeling (`IMD-NWP-201`)
+  - Doppler Weather Radar (DWR) Principles & Severe Storm Nowcasting (`IMD-RAD-101`)
+  - Satellite Meteorology & INSAT-3DR Multi-Spectral Product Analysis (`IMD-SAT-102`)
+  - Tropical Cyclogenesis, Track Forecasting & Early Warnings (`IMD-CYC-301`)
+  - Operational Agrometeorological Advisory Services (AAS & GKMS) (`IMD-AGR-101`)
+  - Seismological Network Monitoring & Tsunami Warning Systems (`IMD-SEIS-202`)
+  - Applied AI/ML & Deep Learning for Extreme Weather & Nowcasting (`IMD-AI-401`)
+  - Aviation Meteorology & ICAO Aerodrome Met Office Standards (`IMD-AVN-201`)
+  - Operational Ocean State Forecasting & Storm Surge Inundation (`INCOIS-OCN-301`)
+  - Climate Dynamics & Extended Range Monsoonal Teleconnections (`IMD-CLIM-302`)
+  - High-Performance Computing (HPC) & GPU Earth System Modeling (`NCMRWF-HPC-501`)
+  - Dual-Polarimetric Doppler Radar Urban Hydrometeorology (`IMD-RAD-302`)
 - **Interactive Learning Room**: High-definition video lectures, presentation slide decks (PPT/PDF), and lesson completion checklists.
 - **Real-Time Timed MCQ Assessment Engine**: Countdown clock, question navigator palette, instant auto-grading, and pedagogical answer reviews with scientific explanations.
 - **Verifiable Digital Certificates**: Automatic issuance for scores \(\ge 70\%\), featuring authentic Government of India/MoES styling, unique Certificate IDs (e.g. `IMD-CB-2026-8921`), and scannable QR verification.

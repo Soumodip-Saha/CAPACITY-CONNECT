@@ -1,4 +1,4 @@
-﻿from typing import Optional, List, Dict, Any
+from typing import Optional, List, Dict, Any
 from pydantic import BaseModel, Field
 
 class UserRegisterRequest(BaseModel):
@@ -6,6 +6,7 @@ class UserRegisterRequest(BaseModel):
     password: str
     full_name: str
     role: str = "trainee"
+    admin_code: Optional[str] = ""
     designation: Optional[str] = ""
     department: Optional[str] = ""
     qualifications: Optional[str] = ""

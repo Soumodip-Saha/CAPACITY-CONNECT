@@ -80,24 +80,29 @@ def trainer_courses(request: Request):
         cursor = db.cursor()
         cursor.execute("""
             SELECT c.*,
+                   u.full_name as trainer_name,
                    (SELECT COUNT(*) FROM enrollments WHERE course_id = c.id) as enrollment_count,
                    (SELECT COUNT(*) FROM course_lessons WHERE course_id = c.id) as lesson_count,
                    (SELECT COUNT(*) FROM quizzes WHERE course_id = c.id) as quiz_count,
                    (SELECT AVG(rating_overall) FROM course_feedback WHERE course_id = c.id) as avg_rating
             FROM courses c
-            WHERE c.trainer_id = ? OR ? = 'admin'
+            LEFT JOIN users u ON u.id = c.trainer_id
             ORDER BY c.created_at DESC
-        """, (user["id"], user["role"]))
-        courses = [dict(row) for row in cursor.fetchall()]
+        """)
+        all_courses = [dict(row) for row in cursor.fetchall()]
+        my_courses = [c for c in all_courses if c.get("trainer_id") == user["id"] or user["role"] == "admin"]
+        target_courses = [c for c in all_courses if c.get("trainer_id") != user["id"] and user["role"] != "admin"]
 
-        # Domains list - FIXED
-        cursor.execute("SELECT DISTINCT domain FROM courses")
-        domains = [next(iter(row.values())) if isinstance(row, dict) else row[0] for row in cursor.fetchall()]
+        # Domains list
+        cursor.execute("SELECT DISTINCT domain FROM courses ORDER BY domain ASC")
+        domains = [row[0] for row in cursor.fetchall()]
 
     return templates.TemplateResponse(request=request, name="trainer/courses.html", context={
         "request": request,
         "user": user,
-        "courses": courses,
+        "courses": my_courses,
+        "all_target_courses": all_courses,
+        "target_courses": target_courses,
         "domains": domains,
         "success": None,
         "error": None
@@ -177,9 +182,7 @@ def add_module(request: Request, course_id: int, title: str = Form(...), summary
     with get_db() as db:
         cursor = db.cursor()
         cursor.execute("SELECT COALESCE(MAX(order_num), 0) + 1 FROM course_modules WHERE course_id = ?", (course_id,))
-        
-        res = cursor.fetchone()
-        next_order = next(iter(res.values())) if isinstance(res, dict) else (res[0] if res else 1)
+        next_order = cursor.fetchone()[0]
 
         cursor.execute("""
             INSERT INTO course_modules (course_id, title, order_num, summary)
@@ -187,7 +190,6 @@ def add_module(request: Request, course_id: int, title: str = Form(...), summary
         """, (course_id, title.strip(), next_order, summary.strip()))
 
     return RedirectResponse(url=f"/trainer/courses/{course_id}/manage", status_code=303)
-
 
 @router.post("/courses/{course_id}/lessons/add")
 def add_lesson(
@@ -204,9 +206,7 @@ def add_lesson(
     with get_db() as db:
         cursor = db.cursor()
         cursor.execute("SELECT COALESCE(MAX(order_num), 0) + 1 FROM course_lessons WHERE module_id = ?", (module_id,))
-        
-        res = cursor.fetchone()
-        next_order = next(iter(res.values())) if isinstance(res, dict) else (res[0] if res else 1)
+        next_order = cursor.fetchone()[0]
 
         cursor.execute("""
             INSERT INTO course_lessons (module_id, course_id, title, lesson_type, content_url, duration_mins, notes, order_num)
@@ -221,7 +221,7 @@ def create_quiz_page(request: Request, course_id: Optional[int] = None):
     
     with get_db() as db:
         cursor = db.cursor()
-        cursor.execute("SELECT id, title, code, domain FROM courses WHERE trainer_id = ? OR ? = 'admin'", (user["id"], user["role"]))
+        cursor.execute("SELECT id, title, code, domain FROM courses ORDER BY domain ASC, code ASC")
         courses = [dict(row) for row in cursor.fetchall()]
 
     return templates.TemplateResponse(request=request, name="trainer/create_quiz.html", context={
@@ -292,9 +292,8 @@ def trainer_library_page(request: Request):
         """, (user["id"], user["role"]))
         resources = [dict(row) for row in cursor.fetchall()]
 
-        # Domains list - FIXED
         cursor.execute("SELECT DISTINCT domain FROM courses")
-        domains = [next(iter(row.values())) if isinstance(row, dict) else row[0] for row in cursor.fetchall()]
+        domains = [row[0] for row in cursor.fetchall()]
 
     return templates.TemplateResponse(request=request, name="trainer/library.html", context={
         "request": request,
@@ -345,7 +344,7 @@ def trainer_analytics(request: Request):
         """, (user["id"], user["role"]))
         attempts = [dict(row) for row in cursor.fetchall()]
 
-        # Question level analytics (FIXED PostgreSQL GROUP BY error)
+        # Question level analytics
         cursor.execute("""
             SELECT qq.id, qq.question_text, qq.correct_option, q.title as quiz_title,
                    COUNT(qa.id) as total_answers
@@ -353,7 +352,7 @@ def trainer_analytics(request: Request):
             JOIN quizzes q ON q.id = qq.quiz_id
             LEFT JOIN quiz_attempts qa ON qa.quiz_id = q.id
             WHERE q.trainer_id = ? OR ? = 'admin'
-            GROUP BY qq.id, qq.question_text, qq.correct_option, q.title
+            GROUP BY qq.id
             LIMIT 10
         """, (user["id"], user["role"]))
         question_stats = [dict(row) for row in cursor.fetchall()]

@@ -103,7 +103,7 @@
                             </div>
 
                             <div class="flex justify-between items-center pt-3 border-t border-slate-100 text-xs">
-                                <span class="text-slate-400">Enrolled on {{ (e.enrolled_at | string)[:10] }}</span>
+                                <span class="text-slate-400">Enrolled on {{ e.enrolled_at[:10] }}</span>
                                 <a href="/trainee/courses/{{ e.course_id }}" class="px-4 py-1.5 bg-sky-600 hover:bg-sky-500 text-white font-bold rounded-lg shadow-sm transition flex items-center gap-1.5">
                                     Resume Learning <i data-lucide="arrow-right" class="w-3.5 h-3.5"></i>
                                 </a>

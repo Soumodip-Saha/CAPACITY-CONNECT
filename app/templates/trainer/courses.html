@@ -1,61 +1,178 @@
 {% extends "base.html" %}
 
-{% block title %}Manage Courses - Trainer Suite{% endblock %}
+{% block title %}Manage Courses & Target Curricula - Trainer Suite{% endblock %}
 
 {% block content %}
-<div class="max-w-7xl mx-auto px-4 py-8 space-y-8">
-    <div class="flex justify-between items-center">
+<div class="max-w-7xl mx-auto px-4 py-8 space-y-10">
+    
+    <!-- Top Action Bar -->
+    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-            <span class="text-xs font-bold text-emerald-700 bg-emerald-50 px-2.5 py-0.5 rounded-full uppercase border border-emerald-200">Curricula Management</span>
-            <h1 class="text-3xl font-black text-slate-900 mt-1">Author & Manage Courses</h1>
+            <div class="flex items-center gap-2 mb-1">
+                <span class="text-xs font-bold text-emerald-700 bg-emerald-50 px-2.5 py-0.5 rounded-full uppercase border border-emerald-200 flex items-center gap-1">
+                    <i data-lucide="book-open-check" class="w-3.5 h-3.5"></i> Faculty Curricula Command
+                </span>
+                <span class="text-xs bg-slate-100 text-slate-700 font-bold px-2.5 py-0.5 rounded-full border border-slate-200">
+                    {{ all_target_courses|length }} National Target Courses
+                </span>
+            </div>
+            <h1 class="text-3xl font-black text-slate-900">Author & Manage Target Courses</h1>
+            <p class="text-xs text-slate-500 mt-1">Design curricula modules, build timed assessments, and upload specialized research materials across MoES & IMD disciplines.</p>
         </div>
-        <button onclick="document.getElementById('createCourseModal').classList.toggle('hidden')" class="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs rounded-xl shadow flex items-center gap-1.5">
-            <i data-lucide="plus" class="w-4 h-4"></i> Create New Course
-        </button>
+        
+        <div class="flex items-center gap-3">
+            <a href="/trainer/quiz/create" class="px-4 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold text-xs rounded-xl shadow-sm transition flex items-center gap-1.5 border border-slate-300">
+                <i data-lucide="help-circle" class="w-4 h-4 text-emerald-600"></i> Build Assessment
+            </a>
+            <button onclick="document.getElementById('createCourseModal').classList.toggle('hidden')" class="px-5 py-2.5 bg-gradient-to-r from-emerald-600 to-teal-700 hover:from-emerald-500 hover:to-teal-600 text-white font-bold text-xs rounded-xl shadow flex items-center gap-1.5">
+                <i data-lucide="plus-circle" class="w-4 h-4"></i> Create New Course
+            </button>
+        </div>
     </div>
 
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {% for c in courses %}
-            <div class="bg-white rounded-3xl p-6 border border-slate-200 shadow-sm flex flex-col justify-between space-y-4">
-                <div>
-                    <div class="flex justify-between items-center mb-2">
-                        <span class="bg-emerald-50 text-emerald-800 text-[10px] font-bold px-2 py-0.5 rounded uppercase">{{ c.domain }}</span>
-                        <span class="text-xs font-mono text-slate-400">{{ c.code }}</span>
-                    </div>
-                    <h3 class="text-base font-bold text-slate-900 leading-snug">{{ c.title }}</h3>
-                    <p class="text-xs text-slate-500 line-clamp-2 mt-1">{{ c.description }}</p>
-                </div>
-
-                <div class="pt-3 border-t border-slate-100 flex justify-between items-center text-xs">
-                    <span class="text-slate-400">{{ c.enrollment_count }} Trainees</span>
-                    <a href="/trainer/courses/{{ c.id }}/manage" class="px-4 py-1.5 bg-slate-900 hover:bg-slate-800 text-white font-bold rounded-lg text-xs">
-                        Manage Content &rarr;
-                    </a>
-                </div>
+    <!-- SECTION 1: My Authored & Assigned Courses -->
+    <div class="space-y-4">
+        <div class="flex justify-between items-center">
+            <div>
+                <h2 class="text-lg font-black text-slate-900 flex items-center gap-2">
+                    <i data-lucide="user-check" class="w-5 h-5 text-emerald-600"></i> My Assigned & Authored Courses
+                </h2>
+                <p class="text-xs text-slate-500">Curricula currently under your direct faculty stewardship.</p>
             </div>
-        {% endfor %}
+            <span class="text-xs font-bold text-emerald-700 bg-emerald-50 px-3 py-1 rounded-full border border-emerald-200">
+                {{ courses|length }} Assigned
+            </span>
+        </div>
+
+        {% if courses %}
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {% for c in courses %}
+                    <div class="bg-white rounded-3xl p-6 border-2 border-emerald-300 shadow-sm hover:shadow-md transition flex flex-col justify-between space-y-4 relative overflow-hidden">
+                        <div class="absolute top-0 right-0 bg-emerald-600 text-white text-[9px] font-bold px-3 py-0.5 rounded-bl-xl uppercase tracking-wider">
+                            Lead Faculty
+                        </div>
+
+                        <div>
+                            <div class="flex justify-between items-center mb-2">
+                                <span class="bg-emerald-50 text-emerald-800 text-[10px] font-bold px-2.5 py-0.5 rounded-md uppercase border border-emerald-200">{{ c.domain }}</span>
+                                <span class="text-xs font-mono font-bold text-slate-500 mr-16">{{ c.code }}</span>
+                            </div>
+                            <h3 class="text-base font-black text-slate-900 leading-snug">{{ c.title }}</h3>
+                            <p class="text-xs text-slate-500 line-clamp-2 mt-1.5 leading-relaxed">{{ c.description }}</p>
+                        </div>
+
+                        <div class="space-y-3 pt-3 border-t border-slate-100">
+                            <!-- Stats Badges -->
+                            <div class="grid grid-cols-3 gap-2 text-center text-[10px]">
+                                <div class="bg-slate-50 p-1.5 rounded-xl border border-slate-100">
+                                    <span class="text-slate-400 block text-[9px]">Trainees</span>
+                                    <strong class="text-slate-900 font-bold">{{ c.enrollment_count }}</strong>
+                                </div>
+                                <div class="bg-slate-50 p-1.5 rounded-xl border border-slate-100">
+                                    <span class="text-slate-400 block text-[9px]">Lessons</span>
+                                    <strong class="text-slate-900 font-bold">{{ c.lesson_count }}</strong>
+                                </div>
+                                <div class="bg-slate-50 p-1.5 rounded-xl border border-slate-100">
+                                    <span class="text-slate-400 block text-[9px]">Quizzes</span>
+                                    <strong class="text-slate-900 font-bold">{{ c.quiz_count }}</strong>
+                                </div>
+                            </div>
+
+                            <div class="flex items-center gap-2">
+                                <a href="/trainer/courses/{{ c.id }}/manage" class="flex-1 py-2 text-center bg-slate-900 hover:bg-slate-800 text-white font-bold rounded-xl text-xs transition">
+                                    Manage Content &rarr;
+                                </a>
+                                <a href="/trainer/quiz/create?course_id={{ c.id }}" title="Build Assessment" class="p-2 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200 rounded-xl transition">
+                                    <i data-lucide="help-circle" class="w-4 h-4"></i>
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <div class="bg-slate-50 rounded-3xl p-8 border border-slate-200 text-center space-y-3">
+                <i data-lucide="folder-plus" class="w-8 h-8 text-slate-400 mx-auto"></i>
+                <p class="text-xs text-slate-500 font-medium">You have not authored any customized courses yet. Create a course below or contribute content to existing national target courses.</p>
+            </div>
+        {% endif %}
+    </div>
+
+    <!-- SECTION 2: All MoES National Target Courses Catalog -->
+    <div class="space-y-4 pt-4 border-t border-slate-200">
+        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
+            <div>
+                <h2 class="text-lg font-black text-slate-900 flex items-center gap-2">
+                    <i data-lucide="compass" class="w-5 h-5 text-sky-600"></i> MoES National Target Courses Matrix
+                </h2>
+                <p class="text-xs text-slate-500">Collaborate, build quizzes, and upload technical material across all earth science disciplines.</p>
+            </div>
+            <span class="text-xs text-slate-500 font-medium">
+                {{ all_target_courses|length }} Specialized Disciplines Available
+            </span>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {% for c in all_target_courses %}
+                <div class="bg-white rounded-3xl p-6 border border-slate-200 shadow-sm hover:border-slate-300 hover:shadow-md transition flex flex-col justify-between space-y-4">
+                    <div>
+                        <div class="flex justify-between items-center mb-2">
+                            <span class="bg-sky-50 text-sky-800 text-[10px] font-bold px-2.5 py-0.5 rounded-md uppercase border border-sky-200">{{ c.domain }}</span>
+                            <span class="text-xs font-mono font-bold text-slate-500">{{ c.code }}</span>
+                        </div>
+                        <h3 class="text-base font-bold text-slate-900 leading-snug">{{ c.title }}</h3>
+                        <p class="text-xs text-slate-500 line-clamp-2 mt-1.5 leading-relaxed">{{ c.description }}</p>
+                    </div>
+
+                    <div class="space-y-3 pt-3 border-t border-slate-100">
+                        <div class="flex items-center justify-between text-[11px] text-slate-500">
+                            <span class="flex items-center gap-1">
+                                <i data-lucide="clock" class="w-3.5 h-3.5 text-slate-400"></i> {{ c.duration_hours }} Hours
+                            </span>
+                            <span class="flex items-center gap-1">
+                                <i data-lucide="award" class="w-3.5 h-3.5 text-slate-400"></i> {{ c.level }}
+                            </span>
+                            <span class="flex items-center gap-1">
+                                <i data-lucide="users" class="w-3.5 h-3.5 text-slate-400"></i> {{ c.enrollment_count }} Enrolled
+                            </span>
+                        </div>
+
+                        <div class="flex items-center gap-2">
+                            <a href="/trainer/courses/{{ c.id }}/manage" class="flex-1 py-2 text-center bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold rounded-xl text-xs transition border border-slate-300">
+                                View Curriculum
+                            </a>
+                            <a href="/trainer/quiz/create?course_id={{ c.id }}" title="Add Assessment" class="px-3 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-bold transition flex items-center gap-1">
+                                <i data-lucide="plus" class="w-3.5 h-3.5"></i> Quiz
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
     </div>
 </div>
 
 <!-- Modal Create Course -->
 <div id="createCourseModal" class="hidden fixed inset-0 bg-slate-950/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-    <div class="bg-white rounded-3xl p-6 sm:p-8 max-w-lg w-full border border-slate-200 shadow-2xl space-y-4">
+    <div class="bg-white rounded-3xl p-6 sm:p-8 max-w-lg w-full border border-slate-200 shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto">
         <div class="flex justify-between items-center">
-            <h3 class="font-bold text-slate-900 text-base">Create New MoES/IMD Course</h3>
+            <h3 class="font-bold text-slate-900 text-base flex items-center gap-2">
+                <i data-lucide="plus-circle" class="w-5 h-5 text-emerald-600"></i> Create New Target Course
+            </h3>
             <button onclick="document.getElementById('createCourseModal').classList.add('hidden')" class="p-1 text-slate-400 hover:text-slate-600"><i data-lucide="x" class="w-5 h-5"></i></button>
         </div>
         <form action="/trainer/courses/create" method="post" class="space-y-3">
             <div>
-                <label class="block text-xs font-bold text-slate-700 mb-1">Course Title</label>
-                <input type="text" name="title" required placeholder="e.g. Dual-Pol Radar Data Quality Control" class="w-full px-3 py-2 text-xs border border-slate-300 rounded-xl">
+                <label class="block text-xs font-bold text-slate-700 mb-1">Course Title *</label>
+                <input type="text" name="title" required placeholder="e.g. Extreme Rainfall Nowcasting with AI" class="w-full px-3 py-2 text-xs border border-slate-300 rounded-xl focus:ring-2 focus:ring-emerald-500">
             </div>
             <div class="grid grid-cols-2 gap-3">
                 <div>
-                    <label class="block text-xs font-bold text-slate-700 mb-1">Course Code</label>
-                    <input type="text" name="code" required placeholder="e.g. IMD-RAD-205" class="w-full px-3 py-2 text-xs border border-slate-300 rounded-xl uppercase">
+                    <label class="block text-xs font-bold text-slate-700 mb-1">Course Code *</label>
+                    <input type="text" name="code" required placeholder="e.g. IMD-AI-405" class="w-full px-3 py-2 text-xs border border-slate-300 rounded-xl uppercase font-mono">
                 </div>
                 <div>
-                    <label class="block text-xs font-bold text-slate-700 mb-1">Domain</label>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">Domain Classification *</label>
                     <select name="domain" class="w-full px-3 py-2 text-xs border border-slate-300 rounded-xl bg-white">
                         <option value="Numerical Weather Prediction">Numerical Weather Prediction</option>
                         <option value="Radar Meteorology">Radar Meteorology</option>
@@ -63,28 +180,35 @@
                         <option value="Cyclone Forecasting">Cyclone Forecasting</option>
                         <option value="Agrometeorology">Agrometeorology</option>
                         <option value="Seismology & Tsunami">Seismology & Tsunami</option>
+                        <option value="Artificial Intelligence in Meteorology">Artificial Intelligence in Meteorology</option>
+                        <option value="Aviation Meteorology">Aviation Meteorology</option>
+                        <option value="Oceanographic Sciences">Oceanographic Sciences</option>
+                        <option value="Climatology & Climate Change">Climatology & Climate Change</option>
+                        <option value="HPC & Scientific Computing">HPC & Scientific Computing</option>
                     </select>
                 </div>
             </div>
             <div class="grid grid-cols-2 gap-3">
                 <div>
-                    <label class="block text-xs font-bold text-slate-700 mb-1">Level</label>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">Competency Level</label>
                     <select name="level" class="w-full px-3 py-2 text-xs border border-slate-300 rounded-xl bg-white">
                         <option value="Beginner">Beginner</option>
-                        <option value="Intermediate">Intermediate</option>
+                        <option value="Intermediate" selected>Intermediate</option>
                         <option value="Advanced">Advanced</option>
                     </select>
                 </div>
                 <div>
                     <label class="block text-xs font-bold text-slate-700 mb-1">Duration (Hours)</label>
-                    <input type="number" name="duration_hours" value="20" min="5" max="100" class="w-full px-3 py-2 text-xs border border-slate-300 rounded-xl">
+                    <input type="number" name="duration_hours" value="20" min="5" max="120" class="w-full px-3 py-2 text-xs border border-slate-300 rounded-xl">
                 </div>
             </div>
             <div>
-                <label class="block text-xs font-bold text-slate-700 mb-1">Description</label>
-                <textarea name="description" rows="3" required placeholder="Detailed overview of technical topics and competencies targeted..." class="w-full px-3 py-2 text-xs border border-slate-300 rounded-xl"></textarea>
+                <label class="block text-xs font-bold text-slate-700 mb-1">Course Description & Learning Objectives *</label>
+                <textarea name="description" rows="3" required placeholder="Detailed overview of atmospheric/oceanographic competencies targeted..." class="w-full px-3 py-2 text-xs border border-slate-300 rounded-xl focus:ring-2 focus:ring-emerald-500"></textarea>
             </div>
-            <button type="submit" class="w-full py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-xl text-xs shadow">Publish New Curriculum</button>
+            <button type="submit" class="w-full py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-xl text-xs shadow transition">
+                Publish Target Curriculum
+            </button>
         </form>
     </div>
 </div>

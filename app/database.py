@@ -483,6 +483,42 @@ def seed_db():
                 "IMD-SEIS-202", "Seismology & Tsunami", "Intermediate", 20,
                 "Comprehensive curriculum on broadband seismometer instrumentation, real-time seismic phase picking (P and S waves), hypocenter and magnitude determination (Mw, Mb), focal mechanism solutions, and early tsunami warning modeling for coastal regions.",
                 trainer_ids["dr.k.murthy@imd.gov.in"]
+            ),
+            (
+                "Applied AI/ML & Deep Learning for Extreme Weather & Nowcasting",
+                "IMD-AI-401", "Artificial Intelligence in Meteorology", "Advanced", 30,
+                "Advanced capacity building on Physics-Informed Neural Networks (PINNs), ConvLSTM for radar echo extrapolation, Transformer models for precipitation nowcasting, and machine learning post-processing of numerical ensemble forecasts.",
+                trainer_ids["dr.m.sharma@imd.gov.in"]
+            ),
+            (
+                "Aviation Meteorology & ICAO Aerodrome Met Office (AMO) Standards",
+                "IMD-AVN-201", "Aviation Meteorology", "Intermediate", 20,
+                "Operational training on METAR, SPECI, TAF formulation, terminal aerodrome weather radar, low-level wind shear detection systems (LLWAS), runway visual range (RVR) instrumentation, and SIGMET issuance for clear-air turbulence and convective storms.",
+                trainer_ids["dr.ananya.das@imd.gov.in"]
+            ),
+            (
+                "Operational Ocean State Forecasting, Storm Surges & Coastal Hazard Warning",
+                "INCOIS-OCN-301", "Oceanographic Sciences", "Advanced", 24,
+                "Collaborative MoES/INCOIS curriculum covering coastal sea-state prediction, wave-rider buoy telemetry, High-Frequency (HF) radar surface currents, hydrodynamic storm surge modeling (ADCIRC/IITD model), and coastal inundation warning dissemination.",
+                trainer_ids["dr.r.venkatesh@imd.gov.in"]
+            ),
+            (
+                "Climate Dynamics, Monsoonal Teleconnections & Extended Range Forecasting",
+                "IMD-CLIM-302", "Climatology & Climate Change", "Intermediate", 22,
+                "Systematic training on coupled climate models, El Niño Southern Oscillation (ENSO), Indian Ocean Dipole (IOD), Madden-Julian Oscillation (MJO), drought monitoring indicators, and sub-seasonal to seasonal (S2S) monsoon predictions.",
+                trainer_ids["dr.priya.nair@imd.gov.in"]
+            ),
+            (
+                "High-Performance Computing (HPC), GPU Acceleration & Earth System Modeling",
+                "NCMRWF-HPC-501", "HPC & Scientific Computing", "Advanced", 25,
+                "Practical training on MoES supercomputing clusters (Pratyush & Mihir), MPI/OpenMP parallelization of atmospheric dynamical cores, GPU-accelerated microphysics schemes, and Petascale data I/O management with NetCDF-4/Zarr.",
+                trainer_ids["dr.m.sharma@imd.gov.in"]
+            ),
+            (
+                "Dual-Polarimetric Doppler Radar Urban Hydrometeorology & Flash Flood Nowcasting",
+                "IMD-RAD-302", "Radar Meteorology", "Advanced", 20,
+                "Urban nowcasting techniques using high-resolution X-band dual-polarimetric radars, Quantitative Precipitation Estimation (QPE) algorithms, Specific Differential Phase (Kdp) rain rate derivation, and integration with city drainage hydrodynamic models.",
+                trainer_ids["dr.ananya.das@imd.gov.in"]
             )
         ]
 

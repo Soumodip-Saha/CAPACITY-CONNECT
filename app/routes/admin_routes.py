@@ -80,11 +80,7 @@ def manage_users(request: Request, role: str = "", status_filter: str = "", sear
         users_list = [dict(row) for row in cursor.fetchall()]
 
         cursor.execute("SELECT COUNT(*) FROM users WHERE status = 'pending_approval'")
-        res = cursor.fetchone()
-        if isinstance(res, dict):
-            pending_count = next(iter(res.values()), 0)
-        else:
-            pending_count = res[0] if res and res[0] is not None else 0
+        pending_count = cursor.fetchone()[0]
 
     return templates.TemplateResponse(request=request, name="admin/users.html", context={
         "request": request,
@@ -157,9 +153,7 @@ def competency_mapping_page(
     with get_db() as db:
         cursor = db.cursor()
         cursor.execute("SELECT DISTINCT domain FROM courses")
-        
-        # FIXED: Dictionary safe extraction for domains list
-        domains = [next(iter(row.values())) if isinstance(row, dict) else row[0] for row in cursor.fetchall()]
+        domains = [row[0] for row in cursor.fetchall()]
 
         # Pre-set suggestions
         preset_topics = [

@@ -1,0 +1,205 @@
+﻿import os
+
+register_html = """{% extends "base.html" %}
+
+{% block title %}Officer Registration - MoES / IMD CAPACITY CONNECT{% endblock %}
+
+{% block content %}
+<div class="max-w-3xl mx-auto px-4 py-12">
+    <div class="text-center mb-8">
+        <span class="bg-sky-100 text-sky-800 text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wider">
+            Portal Registration
+        </span>
+        <h1 class="text-3xl font-black text-slate-900 mt-2">Join CAPACITY CONNECT</h1>
+        <p class="text-xs sm:text-sm text-slate-500 mt-1">Register as a Trainee, Subject Matter Trainer, or Administrative Governance Officer</p>
+    </div>
+
+    {% if error %}
+        <div class="bg-rose-50 border border-rose-200 text-rose-700 p-4 rounded-2xl text-xs flex items-center gap-2 mb-6 animate-shake">
+            <i data-lucide="alert-circle" class="w-4 h-4 shrink-0 text-rose-500"></i>
+            <span>{{ error }}</span>
+        </div>
+    {% endif %}
+
+    {% if success %}
+        <div class="bg-emerald-50 border border-emerald-200 text-emerald-800 p-6 rounded-3xl text-sm mb-6 space-y-3 animate-fade-in">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-full bg-emerald-600 text-white flex items-center justify-center shrink-0">
+                    <i data-lucide="check" class="w-6 h-6"></i>
+                </div>
+                <div>
+                    <h3 class="font-bold text-base">Registration Submitted Successfully</h3>
+                    <p class="text-xs text-emerald-700">{{ success }}</p>
+                </div>
+            </div>
+            <div class="pt-2">
+                <a href="/auth/login" class="inline-flex items-center gap-1.5 px-4 py-2 bg-emerald-700 text-white rounded-xl font-bold text-xs hover:bg-emerald-600 transition">
+                    Go to Login Page <i data-lucide="arrow-right" class="w-3.5 h-3.5"></i>
+                </a>
+            </div>
+        </div>
+    {% endif %}
+
+    <div class="bg-white p-8 sm:p-10 rounded-3xl border border-slate-200 shadow-xl">
+        <form action="/auth/register" method="post" class="space-y-6">
+            
+            <!-- Role Selection (3 Roles: Trainee, Trainer, Admin) -->
+            <div>
+                <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">Select Your Role *</label>
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                    
+                    <!-- Trainee Card -->
+                    <label id="roleCardTrainee" class="relative flex flex-col p-4 rounded-2xl border-2 cursor-pointer transition border-sky-500 bg-sky-50/50 has-[:checked]:border-sky-600 has-[:checked]:bg-sky-100/60">
+                        <input type="radio" name="role" value="trainee" checked class="sr-only" onchange="handleRoleChange('trainee')">
+                        <div class="flex items-center justify-between mb-1">
+                            <span class="font-bold text-slate-900 text-sm">🎓 Trainee</span>
+                            <i data-lucide="check-circle-2" class="w-4 h-4 text-sky-600"></i>
+                        </div>
+                        <span class="text-[11px] text-slate-500 leading-tight">Immediate access to enroll in courses & assessments</span>
+                    </label>
+
+                    <!-- Trainer Card -->
+                    <label id="roleCardTrainer" class="relative flex flex-col p-4 rounded-2xl border-2 cursor-pointer transition border-slate-200 hover:border-slate-300 has-[:checked]:border-emerald-600 has-[:checked]:bg-emerald-50">
+                        <input type="radio" name="role" value="trainer" class="sr-only" onchange="handleRoleChange('trainer')">
+                        <div class="flex items-center justify-between mb-1">
+                            <span class="font-bold text-slate-900 text-sm">👨‍🏫 Trainer</span>
+                            <i data-lucide="check-circle-2" class="w-4 h-4 text-emerald-600"></i>
+                        </div>
+                        <span class="text-[11px] text-slate-500 leading-tight">Author courses, upload library files & build quizzes</span>
+                    </label>
+
+                    <!-- Admin Card -->
+                    <label id="roleCardAdmin" class="relative flex flex-col p-4 rounded-2xl border-2 cursor-pointer transition border-slate-200 hover:border-slate-300 has-[:checked]:border-purple-600 has-[:checked]:bg-purple-50">
+                        <input type="radio" name="role" value="admin" class="sr-only" onchange="handleRoleChange('admin')">
+                        <div class="flex items-center justify-between mb-1">
+                            <span class="font-bold text-slate-900 text-sm">🛡️ Admin</span>
+                            <i data-lucide="check-circle-2" class="w-4 h-4 text-purple-600"></i>
+                        </div>
+                        <span class="text-[11px] text-slate-500 leading-tight">MoES/IMD Training Directorate & Governance</span>
+                    </label>
+                </div>
+            </div>
+
+            <!-- Admin Security Passcode Section (Revealed when Admin is chosen) -->
+            <div id="adminSecurityBlock" class="hidden bg-purple-50 border-2 border-purple-200 p-5 rounded-2xl space-y-2 animate-fade-in">
+                <div class="flex items-center justify-between">
+                    <span class="text-xs font-bold text-purple-900 uppercase tracking-wider flex items-center gap-1.5">
+                        <i data-lucide="shield-check" class="w-4 h-4 text-purple-600"></i> Directorate Clearance Security Token
+                    </span>
+                    <span class="text-[10px] bg-purple-200 text-purple-800 font-mono px-2 py-0.5 rounded font-bold">MOES-ADMIN-2026</span>
+                </div>
+                <input type="text" name="admin_code" id="admin_code" placeholder="Enter official passcode (use MOES-ADMIN-2026 for instant activation)" class="w-full px-4 py-2.5 text-xs font-mono uppercase tracking-wider bg-white border border-purple-300 rounded-xl focus:ring-2 focus:ring-purple-500 focus:outline-none">
+                <p class="text-[11px] text-purple-700">
+                    Entering the official directorate passcode provides <strong>instant administrative clearance</strong>. Submissions without the code are safely queued for manual approval by the Director of Training.
+                </p>
+            </div>
+
+            <!-- Credentials -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Full Name *</label>
+                    <input type="text" name="full_name" required placeholder="e.g. Dr. Amit Sharma" class="w-full px-4 py-2.5 text-sm border border-slate-300 rounded-xl focus:ring-2 focus:ring-sky-500 focus:outline-none">
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Official Email Address *</label>
+                    <input type="email" name="email" required placeholder="e.g. asharm@imd.gov.in" class="w-full px-4 py-2.5 text-sm border border-slate-300 rounded-xl focus:ring-2 focus:ring-sky-500 focus:outline-none">
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Password *</label>
+                    <input type="password" name="password" required placeholder="Minimum 6 characters" class="w-full px-4 py-2.5 text-sm border border-slate-300 rounded-xl focus:ring-2 focus:ring-sky-500 focus:outline-none">
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Designation</label>
+                    <input type="text" name="designation" id="designationInput" placeholder="e.g. Meteorologist Grade-I / Scientist-E / Director" class="w-full px-4 py-2.5 text-sm border border-slate-300 rounded-xl focus:ring-2 focus:ring-sky-500 focus:outline-none">
+                </div>
+            </div>
+
+            <!-- Organizational & Technical Profile -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Department / Observatory Center</label>
+                    <input type="text" name="department" id="deptInput" placeholder="e.g. IMD RMC Kolkata / MoES HQ New Delhi" class="w-full px-4 py-2.5 text-sm border border-slate-300 rounded-xl focus:ring-2 focus:ring-sky-500 focus:outline-none">
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Years of Experience</label>
+                    <input type="number" name="experience_years" value="3" min="0" max="45" class="w-full px-4 py-2.5 text-sm border border-slate-300 rounded-xl focus:ring-2 focus:ring-sky-500 focus:outline-none">
+                </div>
+            </div>
+
+            <div>
+                <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Qualifications</label>
+                <input type="text" name="qualifications" placeholder="e.g. M.Sc. Atmospheric Science, Ph.D. Meteorology, B.Tech Electronics" class="w-full px-4 py-2.5 text-sm border border-slate-300 rounded-xl focus:ring-2 focus:ring-sky-500 focus:outline-none">
+            </div>
+
+            <div>
+                <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Core Skills & Competencies (comma separated)</label>
+                <input type="text" name="skills" placeholder="e.g. Radar Meteorology, WRF Model, Python MetPy, Cyclone Tracking, Governance" class="w-full px-4 py-2.5 text-sm border border-slate-300 rounded-xl focus:ring-2 focus:ring-sky-500 focus:outline-none">
+                <span class="text-[10px] text-slate-400 mt-1 block">Used by the Competency Mapping Engine to match courses, trainers, and specialized workshops.</span>
+            </div>
+
+            <div>
+                <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Research Interests & Domain Focus</label>
+                <input type="text" name="interests" placeholder="e.g. Severe Storms, Monsoon Dynamics, Satellite Remote Sensing, Training Policy" class="w-full px-4 py-2.5 text-sm border border-slate-300 rounded-xl focus:ring-2 focus:ring-sky-500 focus:outline-none">
+            </div>
+
+            <div>
+                <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Professional Bio / Summary</label>
+                <textarea name="bio" rows="3" placeholder="Brief summary of your meteorological or administrative responsibilities..." class="w-full px-4 py-2 text-sm border border-slate-300 rounded-xl focus:ring-2 focus:ring-sky-500 focus:outline-none"></textarea>
+            </div>
+
+            <div class="pt-2">
+                <button type="submit" id="submitBtn" class="w-full py-3.5 bg-gradient-to-r from-sky-600 to-blue-700 hover:from-sky-500 hover:to-blue-600 text-white font-bold rounded-xl shadow-lg shadow-sky-600/30 transition text-sm flex items-center justify-center gap-2">
+                    <i data-lucide="user-plus" class="w-4 h-4"></i> Complete Officer Registration
+                </button>
+            </div>
+        </form>
+
+        <div class="mt-6 pt-4 border-t border-slate-100 text-center">
+            <p class="text-xs text-slate-500">
+                Already registered?
+                <a href="/auth/login" class="font-bold text-sky-600 hover:text-sky-700 ml-1">Sign In to Account</a>
+            </p>
+        </div>
+    </div>
+</div>
+
+<script>
+function handleRoleChange(role) {
+    const adminBlock = document.getElementById('adminSecurityBlock');
+    const submitBtn = document.getElementById('submitBtn');
+    const designationInput = document.getElementById('designationInput');
+    const deptInput = document.getElementById('deptInput');
+
+    if (role === 'admin') {
+        adminBlock.classList.remove('hidden');
+        submitBtn.className = "w-full py-3.5 bg-gradient-to-r from-purple-600 to-indigo-700 hover:from-purple-500 hover:to-indigo-600 text-white font-bold rounded-xl shadow-lg shadow-purple-600/30 transition text-sm flex items-center justify-center gap-2";
+        submitBtn.innerHTML = '<i data-lucide="shield-check" class="w-4 h-4"></i> Complete Admin / Governance Registration';
+        if (!designationInput.value) designationInput.placeholder = "e.g. Director of Training / Deputy Director General";
+        if (!deptInput.value) deptInput.placeholder = "e.g. MoES HQ New Delhi - Capacity Directorate";
+    } else if (role === 'trainer') {
+        adminBlock.classList.add('hidden');
+        submitBtn.className = "w-full py-3.5 bg-gradient-to-r from-emerald-600 to-teal-700 hover:from-emerald-500 hover:to-teal-600 text-white font-bold rounded-xl shadow-lg shadow-emerald-600/30 transition text-sm flex items-center justify-center gap-2";
+        submitBtn.innerHTML = '<i data-lucide="user-check" class="w-4 h-4"></i> Submit Trainer Application for Approval';
+        if (!designationInput.value) designationInput.placeholder = "e.g. Scientist-E / Scientist-F / Faculty";
+        if (!deptInput.value) deptInput.placeholder = "e.g. IMD Radar Division / IITM Pune";
+    } else {
+        adminBlock.classList.add('hidden');
+        submitBtn.className = "w-full py-3.5 bg-gradient-to-r from-sky-600 to-blue-700 hover:from-sky-500 hover:to-blue-600 text-white font-bold rounded-xl shadow-lg shadow-sky-600/30 transition text-sm flex items-center justify-center gap-2";
+        submitBtn.innerHTML = '<i data-lucide="user-plus" class="w-4 h-4"></i> Complete Trainee Registration';
+        if (!designationInput.value) designationInput.placeholder = "e.g. Meteorologist Grade-I / Scientific Assistant";
+        if (!deptInput.value) deptInput.placeholder = "e.g. IMD Cyclone Warning Division / DWR Bhuj";
+    }
+    if (window.lucide) lucide.createIcons();
+}
+</script>
+{% endblock %}
+"""
+
+with open("app/templates/auth/register.html", "w", encoding="utf-8") as f:
+    f.write(register_html)
+
+print("Updated app/templates/auth/register.html successfully")

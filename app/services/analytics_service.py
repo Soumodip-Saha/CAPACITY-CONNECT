@@ -20,7 +20,7 @@ def calculate_trainer_competency(
     """
     if required_skills is None:
         required_skills = []
-
+    
     # Tokenize and normalize query
     query_tokens = set(re.findall(r'\w+', (subject + " " + (domain or "")).lower()))
     for s in required_skills:
@@ -167,29 +167,30 @@ def get_admin_dashboard_stats() -> Dict[str, Any]:
     with get_db() as db:
         cursor = db.cursor()
 
-        def safe_fetch_count(query: str, params=()) -> int:
-            cursor.execute(query, params)
-            res = cursor.fetchone()
-            if not res:
-                return 0
-            if isinstance(res, dict):
-                vals = list(res.values())
-                return vals[0] if vals and vals[0] is not None else 0
-            try:
-                return res[0] if res[0] is not None else 0
-            except (KeyError, IndexError, TypeError):
-                return 0
+        # Counts
+        cursor.execute("SELECT COUNT(*) FROM users WHERE role = 'trainee'")
+        total_trainees = cursor.fetchone()[0]
 
-        # Counts with universal safe handlers
-        total_trainees = safe_fetch_count("SELECT COUNT(*) FROM users WHERE role = 'trainee'")
-        total_trainers = safe_fetch_count("SELECT COUNT(*) FROM users WHERE role = 'trainer' AND status = 'active'")
-        pending_approvals = safe_fetch_count("SELECT COUNT(*) FROM users WHERE status = 'pending_approval'")
-        total_courses = safe_fetch_count("SELECT COUNT(*) FROM courses WHERE status = 'published'")
-        total_enrollments = safe_fetch_count("SELECT COUNT(*) FROM enrollments")
-        total_certificates = safe_fetch_count("SELECT COUNT(*) FROM certificates")
-        total_attempts = safe_fetch_count("SELECT COUNT(*) FROM quiz_attempts")
-        passed_attempts = safe_fetch_count("SELECT COUNT(*) FROM quiz_attempts WHERE is_passed = 1")
-        
+        cursor.execute("SELECT COUNT(*) FROM users WHERE role = 'trainer' AND status = 'active'")
+        total_trainers = cursor.fetchone()[0]
+
+        cursor.execute("SELECT COUNT(*) FROM users WHERE status = 'pending_approval'")
+        pending_approvals = cursor.fetchone()[0]
+
+        cursor.execute("SELECT COUNT(*) FROM courses WHERE status = 'published'")
+        total_courses = cursor.fetchone()[0]
+
+        cursor.execute("SELECT COUNT(*) FROM enrollments")
+        total_enrollments = cursor.fetchone()[0]
+
+        cursor.execute("SELECT COUNT(*) FROM certificates")
+        total_certificates = cursor.fetchone()[0]
+
+        cursor.execute("SELECT COUNT(*) FROM quiz_attempts")
+        total_attempts = cursor.fetchone()[0]
+
+        cursor.execute("SELECT COUNT(*) FROM quiz_attempts WHERE is_passed = 1")
+        passed_attempts = cursor.fetchone()[0]
         pass_rate = round((passed_attempts / total_attempts * 100), 1) if total_attempts > 0 else 0.0
 
         # Domain distribution
@@ -257,40 +258,18 @@ def get_trainer_dashboard_stats(trainer_id: int) -> Dict[str, Any]:
 
         # Trainees enrolled
         cursor.execute(f"SELECT COUNT(DISTINCT user_id) FROM enrollments WHERE course_id IN ({placeholders})", course_ids)
-        res_students = cursor.fetchone()
-        
-        if res_students:
-            if isinstance(res_students, dict):
-                total_students = next(iter(res_students.values()), 0)
-            else:
-                try:
-                    total_students = res_students[0]
-                except (KeyError, TypeError):
-                    total_students = list(res_students)[0]
-            total_students = total_students if total_students is not None else 0
-        else:
-            total_students = 0
+        total_students = cursor.fetchone()[0]
 
         # Quizzes
         cursor.execute("SELECT COUNT(*) FROM quizzes WHERE trainer_id = ?", (trainer_id,))
-        res_quizzes = cursor.fetchone()
-
-        if isinstance(res_quizzes, dict):
-            total_quizzes = next(iter(res_quizzes.values()), 0)
-        else:
-            total_quizzes = res_quizzes[0] if res_quizzes and res_quizzes[0] is not None else 0
+        total_quizzes = cursor.fetchone()[0]
 
         # Avg Rating
         cursor.execute("SELECT COALESCE(AVG(rating_trainer), 5.0) FROM course_feedback WHERE trainer_id = ?", (trainer_id,))
-        res_rating = cursor.fetchone()
-
-        if isinstance(res_rating, dict):
-            avg_rating = round(next(iter(res_rating.values()), 5.0), 1)
-        else:
-            avg_rating = round(res_rating[0] if res_rating and res_rating[0] is not None else 5.0, 1)
+        avg_rating = round(cursor.fetchone()[0], 1)
 
         # Recent attempts
-        cursor.execute("""
+        cursor.execute(f"""
             SELECT qa.attempted_at, u.full_name as trainee_name, q.title as quiz_title,
                    qa.score, qa.total_marks, qa.percentage, qa.is_passed
             FROM quiz_attempts qa

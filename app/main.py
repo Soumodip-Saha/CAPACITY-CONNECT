@@ -19,9 +19,6 @@ from app.routes.trainer_routes import router as trainer_router
 from app.routes.admin_routes import router as admin_router
 from app.routes.api_routes import router as api_router
 
-from fastapi import FastAPI
-from fastapi.responses import Response
-
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # Initialize and seed database on startup
@@ -37,10 +34,6 @@ app = FastAPI(
     lifespan=lifespan
 )
 
-@app.get('/favicon.ico', include_in_schema=False)
-async def favicon():
-    return Response(status_code=204)
-
 # Mount Static & Uploads
 app.mount("/static", StaticFiles(directory="app/static"), name="static")
 app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")
@@ -53,14 +46,6 @@ app.include_router(admin_router)
 app.include_router(api_router)
 
 templates = Jinja2Templates(directory="app/templates")
-
-@app.get("/", response_class=HTMLResponse)
-def root_redirect():
-    return RedirectResponse(url="/auth/login", status_code=303)
-    
-@app.get("/login", response_class=HTMLResponse)
-def redirect_to_auth_login():
-    return RedirectResponse(url="/auth/login", status_code=303)
 
 @app.get("/", response_class=HTMLResponse)
 def index_homepage(request: Request):

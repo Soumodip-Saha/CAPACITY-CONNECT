@@ -194,7 +194,7 @@ def trainee_courses(request: Request, domain: str = "", search: str = "", level:
 
         # All distinct domains for filter pills
         cursor.execute("SELECT DISTINCT domain FROM courses WHERE status = 'published'")
-        domains = [next(iter(row.values())) if isinstance(row, dict) else row[0] for row in cursor.fetchall()]
+        domains = [row[0] for row in cursor.fetchall()]
 
     return templates.TemplateResponse(request=request, name="trainee/courses.html", context={
         "request": request,
@@ -314,32 +314,25 @@ def toggle_lesson_complete(request: Request, lesson_id: int):
     with get_db() as db:
         cursor = db.cursor()
         cursor.execute("SELECT course_id FROM course_lessons WHERE id = ?", (lesson_id,))
-        lesson_row = cursor.fetchone()
-        if not lesson_row:
+        lesson = cursor.fetchone()
+        if not lesson:
             return JSONResponse({"error": "Lesson not found"}, status_code=404)
-        
-        # Safely convert to dict to avoid index errors on both SQLite and PostgreSQL
-        lesson = dict(lesson_row)
-        course_id = lesson.get("course_id") or list(lesson.values())[0]
+        course_id = lesson["course_id"]
 
         cursor.execute("SELECT id, completed_lessons FROM enrollments WHERE user_id = ? AND course_id = ?", (user["id"], course_id))
-        enrollment_row = cursor.fetchone()
-        if not enrollment_row:
+        enrollment = cursor.fetchone()
+        if not enrollment:
             return JSONResponse({"error": "Not enrolled"}, status_code=400)
-            
-        enrollment = dict(enrollment_row)
 
-        completed = json.loads(enrollment.get("completed_lessons") or "[]")
+        completed = json.loads(enrollment["completed_lessons"] or "[]")
         if lesson_id in completed:
             completed.remove(lesson_id)
         else:
             completed.append(lesson_id)
 
-        # FIXED: Dictionary safe extraction for COUNT(*)
+        # Count total lessons
         cursor.execute("SELECT COUNT(*) FROM course_lessons WHERE course_id = ?", (course_id,))
-        res_total = cursor.fetchone()
-        total_lessons = next(iter(res_total.values())) if isinstance(res_total, dict) else (res_total[0] if res_total else 1)
-        
+        total_lessons = cursor.fetchone()[0]
         progress = int((len(completed) / max(1, total_lessons)) * 100)
         progress = min(100, progress)
         status_val = "completed" if progress >= 100 else "in_progress"
@@ -543,11 +536,9 @@ def submit_course_feedback(
     
     with get_db() as db:
         cursor = db.cursor()
-        
-        # Safely convert to dict
         cursor.execute("SELECT trainer_id FROM courses WHERE id = ?", (course_id,))
         crs = cursor.fetchone()
-        trainer_id = dict(crs).get("trainer_id") if crs else None
+        trainer_id = crs["trainer_id"] if crs else None
 
         cursor.execute("""
             INSERT INTO course_feedback (course_id, user_id, trainer_id, rating_content, rating_trainer, rating_overall, comments)
