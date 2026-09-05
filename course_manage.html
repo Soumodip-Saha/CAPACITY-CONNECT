@@ -1,0 +1,338 @@
+{% extends "base.html" %}
+
+{% block title %}Manage Course Syllabus & Materials - CAPACITY CONNECT{% endblock %}
+
+{% block content %}
+<div class="max-w-6xl mx-auto px-4 py-8 space-y-6">
+    
+    <!-- Feedback Alerts -->
+    {% if success %}
+        <div class="p-4 bg-emerald-50 border border-emerald-200 text-emerald-800 rounded-2xl text-xs font-bold flex items-center gap-2 animate-fade-in shadow-sm">
+            <i data-lucide="check-circle-2" class="w-4 h-4 text-emerald-600 shrink-0"></i>
+            <span>{{ success }}</span>
+        </div>
+    {% endif %}
+    {% if error %}
+        <div class="p-4 bg-rose-50 border border-rose-200 text-rose-800 rounded-2xl text-xs font-bold flex items-center gap-2 animate-fade-in shadow-sm">
+            <i data-lucide="alert-triangle" class="w-4 h-4 text-rose-600 shrink-0"></i>
+            <span>{{ error }}</span>
+        </div>
+    {% endif %}
+
+    <!-- Course Title Bar -->
+    <div class="bg-white p-6 sm:p-8 rounded-3xl border border-slate-200 shadow-sm flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+        <div class="space-y-1.5 max-w-2xl">
+            <div class="flex items-center gap-2">
+                <span class="text-xs font-bold text-emerald-700 bg-emerald-50 px-2.5 py-0.5 rounded-full uppercase border border-emerald-200">{{ course.domain }}</span>
+                <span class="text-xs font-mono font-bold text-slate-400">{{ course.code }}</span>
+                <span class="text-xs text-slate-400">&bull;</span>
+                <span class="text-xs font-medium text-slate-500">{{ course.duration_hours }} Hours &bull; {{ course.level }}</span>
+            </div>
+            <h1 class="text-2xl font-black text-slate-900 leading-snug">{{ course.title }}</h1>
+            <p class="text-xs text-slate-600 leading-relaxed">{{ course.description }}</p>
+        </div>
+
+        <div class="flex flex-wrap items-center gap-2 w-full md:w-auto">
+            <a href="/trainer/dashboard" class="px-3.5 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold transition flex items-center gap-1">
+                &larr; Portal
+            </a>
+            <button onclick="document.getElementById('editCourseModal').classList.remove('hidden')" class="px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white rounded-xl text-xs font-bold transition flex items-center gap-1.5 shadow-sm">
+                <i data-lucide="edit-3" class="w-3.5 h-3.5 text-emerald-400"></i> Edit Course Info
+            </button>
+            <a href="/trainer/quiz/create?course_id={{ course.id }}" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-bold shadow transition flex items-center gap-1.5">
+                <i data-lucide="plus" class="w-3.5 h-3.5"></i> Add Quiz
+            </a>
+        </div>
+    </div>
+
+    <!-- Modules and Lessons Hierarchy -->
+    <div class="space-y-6">
+        <div class="flex justify-between items-center">
+            <div>
+                <h2 class="text-lg font-black text-slate-900 flex items-center gap-2">
+                    <i data-lucide="layers" class="w-5 h-5 text-sky-600"></i> Course Modules & Interactive Lessons
+                </h2>
+                <p class="text-xs text-slate-500">Configure learning roadmap, video lectures, and technical references</p>
+            </div>
+            <button onclick="document.getElementById('addModuleModal').classList.remove('hidden')" class="px-4 py-2 bg-sky-600 hover:bg-sky-500 text-white text-xs font-bold rounded-xl shadow flex items-center gap-1.5 transition">
+                <i data-lucide="plus-circle" class="w-4 h-4"></i> Add New Module
+            </button>
+        </div>
+
+        {% if modules %}
+            <div class="space-y-6">
+                {% for m in modules %}
+                    <div class="bg-white rounded-3xl p-6 border border-slate-200 shadow-sm space-y-4">
+                        <!-- Module Header -->
+                        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 border-b border-slate-100 pb-3">
+                            <div>
+                                <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400">Module {{ m.order_num }}</span>
+                                <h3 class="text-base font-bold text-slate-900">{{ m.title }}</h3>
+                                {% if m.summary %}
+                                    <p class="text-xs text-slate-500 mt-0.5">{{ m.summary }}</p>
+                                {% endif %}
+                            </div>
+                            <div class="flex items-center gap-2 self-end sm:self-auto">
+                                <button onclick="openAddLessonModal({{ m.id }})" class="px-3 py-1.5 bg-emerald-50 text-emerald-800 hover:bg-emerald-100 rounded-xl text-xs font-bold border border-emerald-200 flex items-center gap-1 transition">
+                                    <i data-lucide="plus" class="w-3 h-3"></i> Add Lesson
+                                </button>
+                                <button onclick="openEditModuleModal({{ m.id }}, {{ m.title|tojson }}, {{ (m.summary or '')|tojson }})" class="p-1.5 text-slate-400 hover:text-slate-700 rounded-lg hover:bg-slate-100 transition" title="Edit Module">
+                                    <i data-lucide="edit-2" class="w-4 h-4"></i>
+                                </button>
+                                <form action="/trainer/courses/{{ course.id }}/modules/{{ m.id }}/delete" method="post" onsubmit="return confirm('Delete this module and all its lessons?')">
+                                    <button type="submit" class="p-1.5 text-slate-400 hover:text-rose-600 rounded-lg hover:bg-rose-50 transition" title="Delete Module">
+                                        <i data-lucide="trash-2" class="w-4 h-4"></i>
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
+
+                        <!-- Lessons in Module -->
+                        <div class="space-y-2.5 sm:pl-2">
+                            {% for l in m.lessons %}
+                                <div class="p-3.5 bg-slate-50 hover:bg-slate-100/70 rounded-2xl border border-slate-200/80 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 text-xs transition">
+                                    <div class="space-y-1">
+                                        <div class="flex items-center gap-2">
+                                            <span class="text-[10px] font-bold px-2 py-0.5 rounded uppercase
+                                                {% if l.lesson_type == 'video' %}bg-purple-100 text-purple-800
+                                                {% elif l.lesson_type == 'document' %}bg-sky-100 text-sky-800
+                                                {% else %}bg-amber-100 text-amber-800{% endif %}">
+                                                {{ l.lesson_type }}
+                                            </span>
+                                            <span class="font-bold text-slate-900">{{ l.title }}</span>
+                                            <span class="text-slate-400 text-[11px]">&bull; {{ l.duration_mins }} Mins</span>
+                                        </div>
+                                        {% if l.notes %}
+                                            <p class="text-[11px] text-slate-500 line-clamp-1 sm:pl-1">{{ l.notes }}</p>
+                                        {% endif %}
+                                    </div>
+                                    <div class="flex items-center gap-2 self-end sm:self-auto shrink-0">
+                                        {% if l.content_url %}
+                                            <a href="{{ l.content_url }}" target="_blank" class="px-2.5 py-1 bg-white hover:bg-slate-200 text-slate-700 rounded-lg text-[11px] font-medium border border-slate-200 flex items-center gap-1 transition">
+                                                <i data-lucide="external-link" class="w-3 h-3"></i> View
+                                            </a>
+                                        {% endif %}
+                                        <button onclick="openEditLessonModal({{ l.id }}, {{ l.title|tojson }}, {{ l.lesson_type|tojson }}, {{ l.duration_mins }}, {{ (l.content_url or '')|tojson }}, {{ (l.notes or '')|tojson }})" class="p-1.5 text-slate-400 hover:text-slate-700 rounded-lg hover:bg-slate-200 transition" title="Edit Lesson">
+                                            <i data-lucide="edit-2" class="w-3.5 h-3.5"></i>
+                                        </button>
+                                        <form action="/trainer/courses/{{ course.id }}/lessons/{{ l.id }}/delete" method="post" onsubmit="return confirm('Delete this lesson?')">
+                                            <button type="submit" class="p-1.5 text-slate-400 hover:text-rose-600 rounded-lg hover:bg-rose-50 transition" title="Delete Lesson">
+                                                <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+                                            </button>
+                                        </form>
+                                    </div>
+                                </div>
+                            {% else %}
+                                <div class="py-4 text-center bg-slate-50 rounded-2xl border border-dashed border-slate-200 text-xs text-slate-400">
+                                    No lessons added to this module yet. Click "Add Lesson" to attach lecture material.
+                                </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <div class="bg-slate-50 rounded-3xl p-12 border border-dashed border-slate-300 text-center space-y-3">
+                <i data-lucide="folder-plus" class="w-10 h-10 text-slate-400 mx-auto"></i>
+                <h3 class="text-base font-bold text-slate-700">No Course Modules Created Yet</h3>
+                <p class="text-xs text-slate-500 max-w-sm mx-auto">Build the curriculum roadmap by adding learning modules and lesson content.</p>
+                <button onclick="document.getElementById('addModuleModal').classList.remove('hidden')" class="px-4 py-2 bg-sky-600 hover:bg-sky-500 text-white font-bold text-xs rounded-xl shadow transition">
+                    Create First Module
+                </button>
+            </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Modal: Edit Course Details -->
+<div id="editCourseModal" class="hidden fixed inset-0 bg-slate-950/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+    <div class="bg-white rounded-3xl p-6 sm:p-8 max-w-lg w-full border border-slate-200 shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto">
+        <div class="flex justify-between items-center">
+            <h3 class="font-bold text-slate-900 text-base flex items-center gap-2">
+                <i data-lucide="edit-3" class="w-5 h-5 text-emerald-600"></i> Edit Course Information
+            </h3>
+            <button onclick="document.getElementById('editCourseModal').classList.add('hidden')" class="p-1 text-slate-400 hover:text-slate-600"><i data-lucide="x" class="w-5 h-5"></i></button>
+        </div>
+        <form action="/trainer/courses/{{ course.id }}/edit" method="post" class="space-y-3">
+            <div>
+                <label class="block text-xs font-bold text-slate-700 mb-1">Course Title *</label>
+                <input type="text" name="title" value="{{ course.title }}" required class="w-full px-3 py-2 text-xs border border-slate-300 rounded-xl focus:ring-2 focus:ring-emerald-500">
+            </div>
+            <div class="grid grid-cols-2 gap-3">
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">Domain Classification *</label>
+                    <select name="domain" class="w-full px-3 py-2 text-xs border border-slate-300 rounded-xl bg-white">
+                        {% for d in domains %}
+                            <option value="{{ d }}" {% if d == course.domain %}selected{% endif %}>{{ d }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">Competency Level</label>
+                    <select name="level" class="w-full px-3 py-2 text-xs border border-slate-300 rounded-xl bg-white">
+                        <option value="Beginner" {% if course.level == 'Beginner' %}selected{% endif %}>Beginner</option>
+                        <option value="Intermediate" {% if course.level == 'Intermediate' %}selected{% endif %}>Intermediate</option>
+                        <option value="Advanced" {% if course.level == 'Advanced' %}selected{% endif %}>Advanced</option>
+                    </select>
+                </div>
+            </div>
+            <div>
+                <label class="block text-xs font-bold text-slate-700 mb-1">Duration (Hours) *</label>
+                <input type="number" name="duration_hours" value="{{ course.duration_hours }}" min="5" max="150" required class="w-full px-3 py-2 text-xs border border-slate-300 rounded-xl">
+            </div>
+            <div>
+                <label class="block text-xs font-bold text-slate-700 mb-1">Course Description & Objectives *</label>
+                <textarea name="description" rows="4" required class="w-full px-3 py-2 text-xs border border-slate-300 rounded-xl focus:ring-2 focus:ring-emerald-500">{{ course.description }}</textarea>
+            </div>
+            <button type="submit" class="w-full py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-xl text-xs shadow transition">
+                Save Course Changes
+            </button>
+        </form>
+    </div>
+</div>
+
+<!-- Modal: Add Module -->
+<div id="addModuleModal" class="hidden fixed inset-0 bg-slate-950/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+    <div class="bg-white rounded-3xl p-6 max-w-md w-full border border-slate-200 shadow-2xl space-y-4">
+        <div class="flex justify-between items-center">
+            <h3 class="font-bold text-slate-900 text-base">Add New Course Module</h3>
+            <button onclick="document.getElementById('addModuleModal').classList.add('hidden')" class="p-1 text-slate-400 hover:text-slate-600"><i data-lucide="x" class="w-5 h-5"></i></button>
+        </div>
+        <form action="/trainer/courses/{{ course.id }}/modules/add" method="post" class="space-y-3">
+            <div>
+                <label class="block text-xs font-bold text-slate-700 mb-1">Module Title *</label>
+                <input type="text" name="title" required placeholder="e.g. Module 2: Observational Network Analysis" class="w-full px-3 py-2 text-xs border border-slate-300 rounded-xl">
+            </div>
+            <div>
+                <label class="block text-xs font-bold text-slate-700 mb-1">Module Summary</label>
+                <textarea name="summary" rows="2" placeholder="Brief summary of syllabus and topics covered..." class="w-full px-3 py-2 text-xs border border-slate-300 rounded-xl"></textarea>
+            </div>
+            <button type="submit" class="w-full py-2.5 bg-sky-600 hover:bg-sky-500 text-white font-bold rounded-xl text-xs shadow transition">Create Module</button>
+        </form>
+    </div>
+</div>
+
+<!-- Modal: Edit Module -->
+<div id="editModuleModal" class="hidden fixed inset-0 bg-slate-950/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+    <div class="bg-white rounded-3xl p-6 max-w-md w-full border border-slate-200 shadow-2xl space-y-4">
+        <div class="flex justify-between items-center">
+            <h3 class="font-bold text-slate-900 text-base">Edit Course Module</h3>
+            <button onclick="document.getElementById('editModuleModal').classList.add('hidden')" class="p-1 text-slate-400 hover:text-slate-600"><i data-lucide="x" class="w-5 h-5"></i></button>
+        </div>
+        <form id="editModuleForm" action="" method="post" class="space-y-3">
+            <div>
+                <label class="block text-xs font-bold text-slate-700 mb-1">Module Title *</label>
+                <input type="text" name="title" id="edit_module_title" required class="w-full px-3 py-2 text-xs border border-slate-300 rounded-xl">
+            </div>
+            <div>
+                <label class="block text-xs font-bold text-slate-700 mb-1">Module Summary</label>
+                <textarea name="summary" id="edit_module_summary" rows="2" class="w-full px-3 py-2 text-xs border border-slate-300 rounded-xl"></textarea>
+            </div>
+            <button type="submit" class="w-full py-2.5 bg-slate-900 hover:bg-slate-800 text-white font-bold rounded-xl text-xs shadow transition">Update Module</button>
+        </form>
+    </div>
+</div>
+
+<!-- Modal: Add Lesson -->
+<div id="addLessonModal" class="hidden fixed inset-0 bg-slate-950/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+    <div class="bg-white rounded-3xl p-6 max-w-md w-full border border-slate-200 shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto">
+        <div class="flex justify-between items-center">
+            <h3 class="font-bold text-slate-900 text-base">Add Lesson to Module</h3>
+            <button onclick="document.getElementById('addLessonModal').classList.add('hidden')" class="p-1 text-slate-400 hover:text-slate-600"><i data-lucide="x" class="w-5 h-5"></i></button>
+        </div>
+        <form action="/trainer/courses/{{ course.id }}/lessons/add" method="post" class="space-y-3">
+            <input type="hidden" name="module_id" id="modal_add_module_id" value="">
+            <div>
+                <label class="block text-xs font-bold text-slate-700 mb-1">Lesson Title *</label>
+                <input type="text" name="title" required placeholder="e.g. 1.2 Doppler Velocity Dealiasing" class="w-full px-3 py-2 text-xs border border-slate-300 rounded-xl">
+            </div>
+            <div class="grid grid-cols-2 gap-3">
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">Lesson Type</label>
+                    <select name="lesson_type" class="w-full px-3 py-2 text-xs border border-slate-300 rounded-xl bg-white">
+                        <option value="video">Recorded Video Lecture</option>
+                        <option value="presentation">Slide Deck (PPT/PDF)</option>
+                        <option value="document">Technical Document</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">Duration (Mins)</label>
+                    <input type="number" name="duration_mins" value="25" min="5" max="180" class="w-full px-3 py-2 text-xs border border-slate-300 rounded-xl">
+                </div>
+            </div>
+            <div>
+                <label class="block text-xs font-bold text-slate-700 mb-1">Content / Embed URL</label>
+                <input type="text" name="content_url" placeholder="https://www.youtube.com/embed/... or /static/docs/..." class="w-full px-3 py-2 text-xs border border-slate-300 rounded-xl">
+            </div>
+            <div>
+                <label class="block text-xs font-bold text-slate-700 mb-1">Lecture Key Notes</label>
+                <textarea name="notes" rows="2" placeholder="Key concepts, mathematical equations, or reference links" class="w-full px-3 py-2 text-xs border border-slate-300 rounded-xl"></textarea>
+            </div>
+            <button type="submit" class="w-full py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-xl text-xs shadow transition">Publish Lesson</button>
+        </form>
+    </div>
+</div>
+
+<!-- Modal: Edit Lesson -->
+<div id="editLessonModal" class="hidden fixed inset-0 bg-slate-950/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+    <div class="bg-white rounded-3xl p-6 max-w-md w-full border border-slate-200 shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto">
+        <div class="flex justify-between items-center">
+            <h3 class="font-bold text-slate-900 text-base">Edit Lesson Details</h3>
+            <button onclick="document.getElementById('editLessonModal').classList.add('hidden')" class="p-1 text-slate-400 hover:text-slate-600"><i data-lucide="x" class="w-5 h-5"></i></button>
+        </div>
+        <form id="editLessonForm" action="" method="post" class="space-y-3">
+            <div>
+                <label class="block text-xs font-bold text-slate-700 mb-1">Lesson Title *</label>
+                <input type="text" name="title" id="edit_lesson_title" required class="w-full px-3 py-2 text-xs border border-slate-300 rounded-xl">
+            </div>
+            <div class="grid grid-cols-2 gap-3">
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">Lesson Type</label>
+                    <select name="lesson_type" id="edit_lesson_type" class="w-full px-3 py-2 text-xs border border-slate-300 rounded-xl bg-white">
+                        <option value="video">Recorded Video Lecture</option>
+                        <option value="presentation">Slide Deck (PPT/PDF)</option>
+                        <option value="document">Technical Document</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">Duration (Mins)</label>
+                    <input type="number" name="duration_mins" id="edit_lesson_duration" min="5" max="180" class="w-full px-3 py-2 text-xs border border-slate-300 rounded-xl">
+                </div>
+            </div>
+            <div>
+                <label class="block text-xs font-bold text-slate-700 mb-1">Content / Embed URL</label>
+                <input type="text" name="content_url" id="edit_lesson_url" class="w-full px-3 py-2 text-xs border border-slate-300 rounded-xl">
+            </div>
+            <div>
+                <label class="block text-xs font-bold text-slate-700 mb-1">Lecture Key Notes</label>
+                <textarea name="notes" id="edit_lesson_notes" rows="2" class="w-full px-3 py-2 text-xs border border-slate-300 rounded-xl"></textarea>
+            </div>
+            <button type="submit" class="w-full py-2.5 bg-slate-900 hover:bg-slate-800 text-white font-bold rounded-xl text-xs shadow transition">Save Lesson Changes</button>
+        </form>
+    </div>
+</div>
+
+<script>
+function openAddLessonModal(moduleId) {
+    document.getElementById('modal_add_module_id').value = moduleId;
+    document.getElementById('addLessonModal').classList.remove('hidden');
+}
+
+function openEditModuleModal(moduleId, title, summary) {
+    document.getElementById('editModuleForm').action = '/trainer/courses/{{ course.id }}/modules/' + moduleId + '/edit';
+    document.getElementById('edit_module_title').value = title;
+    document.getElementById('edit_module_summary').value = summary || '';
+    document.getElementById('editModuleModal').classList.remove('hidden');
+}
+
+function openEditLessonModal(lessonId, title, type, duration, url, notes) {
+    document.getElementById('editLessonForm').action = '/trainer/courses/{{ course.id }}/lessons/' + lessonId + '/edit';
+    document.getElementById('edit_lesson_title').value = title;
+    document.getElementById('edit_lesson_type').value = type;
+    document.getElementById('edit_lesson_duration').value = duration;
+    document.getElementById('edit_lesson_url').value = url || '';
+    document.getElementById('edit_lesson_notes').value = notes || '';
+    document.getElementById('editLessonModal').classList.remove('hidden');
+}
+</script>
+{% endblock %}

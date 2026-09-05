@@ -62,6 +62,10 @@ def trainer_dashboard(request: Request):
         """, (user["id"],))
         feedbacks = [dict(row) for row in cursor.fetchall()]
 
+        # Announcements
+        cursor.execute("SELECT * FROM announcements WHERE is_active = 1 ORDER BY created_at DESC LIMIT 3")
+        announcements = [dict(row) for row in cursor.fetchall()]
+
     return templates.TemplateResponse(request=request, name="trainer/dashboard.html", context={
         "request": request,
         "user": user,
@@ -69,7 +73,8 @@ def trainer_dashboard(request: Request):
         "trainees": trainees,
         "quizzes": quizzes,
         "resources": resources,
-        "feedbacks": feedbacks
+        "feedbacks": feedbacks,
+        "announcements": announcements
     })
 
 @router.get("/courses", response_class=HTMLResponse)
@@ -168,13 +173,40 @@ def manage_course_content(request: Request, course_id: int):
         cursor.execute("SELECT * FROM quizzes WHERE course_id = ?", (course_id,))
         quizzes = [dict(row) for row in cursor.fetchall()]
 
+        cursor.execute("SELECT DISTINCT domain FROM courses ORDER BY domain ASC")
+        domains = [row[0] for row in cursor.fetchall()]
+
     return templates.TemplateResponse(request=request, name="trainer/course_manage.html", context={
         "request": request,
         "user": user,
         "course": course,
         "modules": modules,
-        "quizzes": quizzes
+        "quizzes": quizzes,
+        "domains": domains,
+        "success": request.query_params.get("success"),
+        "error": request.query_params.get("error")
     })
+
+@router.post("/courses/{course_id}/edit")
+def edit_course_details(
+    request: Request,
+    course_id: int,
+    title: str = Form(...),
+    domain: str = Form(...),
+    level: str = Form("Intermediate"),
+    duration_hours: int = Form(20),
+    description: str = Form(...)
+):
+    user = require_auth(request, allowed_roles=["trainer", "admin"])
+    with get_db() as db:
+        cursor = db.cursor()
+        cursor.execute("""
+            UPDATE courses
+            SET title = ?, domain = ?, level = ?, duration_hours = ?, description = ?
+            WHERE id = ?
+        """, (title.strip(), domain.strip(), level, duration_hours, description.strip(), course_id))
+
+    return RedirectResponse(url=f"/trainer/courses/{course_id}/manage?success=Course+details+updated+successfully", status_code=303)
 
 @router.post("/courses/{course_id}/modules/add")
 def add_module(request: Request, course_id: int, title: str = Form(...), summary: str = Form("")):
@@ -189,7 +221,36 @@ def add_module(request: Request, course_id: int, title: str = Form(...), summary
             VALUES (?, ?, ?, ?)
         """, (course_id, title.strip(), next_order, summary.strip()))
 
-    return RedirectResponse(url=f"/trainer/courses/{course_id}/manage", status_code=303)
+    return RedirectResponse(url=f"/trainer/courses/{course_id}/manage?success=Module+created+successfully", status_code=303)
+
+@router.post("/courses/{course_id}/modules/{module_id}/edit")
+def edit_module(
+    request: Request,
+    course_id: int,
+    module_id: int,
+    title: str = Form(...),
+    summary: str = Form("")
+):
+    user = require_auth(request, allowed_roles=["trainer", "admin"])
+    with get_db() as db:
+        cursor = db.cursor()
+        cursor.execute("""
+            UPDATE course_modules
+            SET title = ?, summary = ?
+            WHERE id = ? AND course_id = ?
+        """, (title.strip(), summary.strip(), module_id, course_id))
+
+    return RedirectResponse(url=f"/trainer/courses/{course_id}/manage?success=Module+updated+successfully", status_code=303)
+
+@router.post("/courses/{course_id}/modules/{module_id}/delete")
+def delete_module(request: Request, course_id: int, module_id: int):
+    user = require_auth(request, allowed_roles=["trainer", "admin"])
+    with get_db() as db:
+        cursor = db.cursor()
+        cursor.execute("DELETE FROM course_lessons WHERE module_id = ?", (module_id,))
+        cursor.execute("DELETE FROM course_modules WHERE id = ? AND course_id = ?", (module_id, course_id))
+
+    return RedirectResponse(url=f"/trainer/courses/{course_id}/manage?success=Module+deleted+successfully", status_code=303)
 
 @router.post("/courses/{course_id}/lessons/add")
 def add_lesson(
@@ -213,7 +274,38 @@ def add_lesson(
             VALUES (?, ?, ?, ?, ?, ?, ?, ?)
         """, (module_id, course_id, title.strip(), lesson_type, content_url.strip(), duration_mins, notes.strip(), next_order))
 
-    return RedirectResponse(url=f"/trainer/courses/{course_id}/manage", status_code=303)
+    return RedirectResponse(url=f"/trainer/courses/{course_id}/manage?success=Lesson+added+successfully", status_code=303)
+
+@router.post("/courses/{course_id}/lessons/{lesson_id}/edit")
+def edit_lesson(
+    request: Request,
+    course_id: int,
+    lesson_id: int,
+    title: str = Form(...),
+    lesson_type: str = Form("video"),
+    content_url: str = Form(""),
+    duration_mins: int = Form(20),
+    notes: str = Form("")
+):
+    user = require_auth(request, allowed_roles=["trainer", "admin"])
+    with get_db() as db:
+        cursor = db.cursor()
+        cursor.execute("""
+            UPDATE course_lessons
+            SET title = ?, lesson_type = ?, content_url = ?, duration_mins = ?, notes = ?
+            WHERE id = ? AND course_id = ?
+        """, (title.strip(), lesson_type, content_url.strip(), duration_mins, notes.strip(), lesson_id, course_id))
+
+    return RedirectResponse(url=f"/trainer/courses/{course_id}/manage?success=Lesson+updated+successfully", status_code=303)
+
+@router.post("/courses/{course_id}/lessons/{lesson_id}/delete")
+def delete_lesson(request: Request, course_id: int, lesson_id: int):
+    user = require_auth(request, allowed_roles=["trainer", "admin"])
+    with get_db() as db:
+        cursor = db.cursor()
+        cursor.execute("DELETE FROM course_lessons WHERE id = ? AND course_id = ?", (lesson_id, course_id))
+
+    return RedirectResponse(url=f"/trainer/courses/{course_id}/manage?success=Lesson+deleted+successfully", status_code=303)
 
 @router.get("/quiz/create", response_class=HTMLResponse)
 def create_quiz_page(request: Request, course_id: Optional[int] = None):
