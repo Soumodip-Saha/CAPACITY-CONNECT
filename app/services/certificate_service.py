@@ -141,11 +141,63 @@ def calculate_grade(percentage: float) -> str:
     else:
         return "Pass"
 
+def enrich_certificate_timestamps(cert: Optional[Dict[str, Any]]) -> Optional[Dict[str, Any]]:
+    if not cert:
+        return cert
+
+    raw_created = cert.get("created_at")
+    raw_issue = cert.get("issue_date")
+
+    dt = None
+    if raw_created:
+        try:
+            s = str(raw_created).replace("T", " ").split(".")[0].strip()
+            dt = datetime.strptime(s, "%Y-%m-%d %H:%M:%S")
+        except Exception:
+            pass
+
+    if not dt and raw_issue:
+        try:
+            s = str(raw_issue).replace("T", " ").split(".")[0].strip()
+            if " " in s and len(s.split(" ")[1]) >= 5:
+                dt = datetime.strptime(s, "%Y-%m-%d %H:%M:%S")
+            else:
+                date_part = s.split(" ")[0]
+                d = datetime.strptime(date_part, "%Y-%m-%d")
+                dt = datetime.combine(d.date(), datetime.strptime("11:30:00", "%H:%M:%S").time())
+        except Exception:
+            pass
+
+    if not dt:
+        dt = datetime.now()
+
+    issue_d = None
+    if raw_issue:
+        try:
+            s_date = str(raw_issue).split(" ")[0].split("T")[0].strip()
+            issue_d = datetime.strptime(s_date, "%Y-%m-%d").date()
+        except Exception:
+            pass
+    if not issue_d:
+        issue_d = dt.date()
+
+    cert["formatted_date"] = issue_d.strftime("%d %B %Y")
+    cert["formatted_short_date"] = issue_d.strftime("%d %b %Y")
+    cert["formatted_time"] = dt.strftime("%I:%M %p IST")
+    cert["formatted_time_24h"] = dt.strftime("%H:%M:%S IST")
+    cert["formatted_datetime"] = f"{issue_d.strftime('%d %B %Y')}, {dt.strftime('%I:%M %p IST')}"
+    cert["formatted_timestamp"] = f"{issue_d.strftime('%d-%b-%Y')} {dt.strftime('%H:%M:%S IST')}"
+    cert["issue_date_clean"] = issue_d.strftime("%d %B %Y")
+    cert["issue_time"] = dt.strftime("%I:%M %p IST")
+    cert["duration_display"] = f"{cert.get('duration_hours', 20)} Hours"
+
+    return cert
+
 def verify_certificate_by_id(cert_id: str) -> Optional[Dict[str, Any]]:
     with get_db() as db:
         cursor = db.cursor()
         cursor.execute("""
-            SELECT c.id, c.certificate_id, c.issue_date, c.grade, c.score_percentage,
+            SELECT c.id, c.certificate_id, c.issue_date, c.created_at, c.grade, c.score_percentage,
                    c.qr_data, c.verification_url,
                    u.full_name as trainee_name, u.email as trainee_email, u.designation as trainee_designation,
                    u.department as trainee_department,
@@ -161,7 +213,7 @@ def verify_certificate_by_id(cert_id: str) -> Optional[Dict[str, Any]]:
         row = cursor.fetchone()
         if not row:
             return None
-        return dict(row)
+        return enrich_certificate_timestamps(dict(row))
 
 # 3. Analytics Service
 def get_admin_dashboard_stats() -> Dict[str, Any]:

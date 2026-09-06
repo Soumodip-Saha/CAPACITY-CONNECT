@@ -6,7 +6,7 @@ from fastapi.responses import HTMLResponse, RedirectResponse, JSONResponse
 from fastapi.templating import Jinja2Templates
 from app.auth import require_auth, get_current_user_from_request
 from app.database import get_db
-from app.services.certificate_service import generate_certificate_id, calculate_grade
+from app.services.certificate_service import generate_certificate_id, calculate_grade, enrich_certificate_timestamps
 
 router = APIRouter(prefix="/trainee", tags=["trainee"])
 templates = Jinja2Templates(directory="app/templates")
@@ -48,14 +48,14 @@ def trainee_dashboard(request: Request):
 
         # Certificates earned
         cursor.execute("""
-            SELECT cert.id, cert.certificate_id, cert.issue_date, cert.grade, cert.score_percentage,
+            SELECT cert.id, cert.certificate_id, cert.issue_date, cert.created_at, cert.grade, cert.score_percentage,
                    c.title as course_title, c.code as course_code
             FROM certificates cert
             JOIN courses c ON c.id = cert.course_id
             WHERE cert.user_id = ?
-            ORDER BY cert.issue_date DESC
+            ORDER BY cert.issue_date DESC, cert.id DESC
         """, (user["id"],))
-        certificates = [dict(row) for row in cursor.fetchall()]
+        certificates = [enrich_certificate_timestamps(dict(row)) for row in cursor.fetchall()]
 
         # Available / Upcoming Quizzes
         cursor.execute("""
@@ -92,14 +92,14 @@ def trainee_profile(request: Request):
     with get_db() as db:
         cursor = db.cursor()
         cursor.execute("""
-            SELECT cert.certificate_id, cert.issue_date, cert.grade, cert.score_percentage,
+            SELECT cert.certificate_id, cert.issue_date, cert.created_at, cert.grade, cert.score_percentage,
                    c.title as course_title, c.code as course_code
             FROM certificates cert
             JOIN courses c ON c.id = cert.course_id
             WHERE cert.user_id = ?
-            ORDER BY cert.issue_date DESC
+            ORDER BY cert.issue_date DESC, cert.id DESC
         """, (user["id"],))
-        certificates = [dict(row) for row in cursor.fetchall()]
+        certificates = [enrich_certificate_timestamps(dict(row)) for row in cursor.fetchall()]
 
     return templates.TemplateResponse(request=request, name="trainee/profile.html", context={
         "request": request,
@@ -140,14 +140,14 @@ def update_trainee_profile(
         updated_user = dict(cursor.fetchone())
 
         cursor.execute("""
-            SELECT cert.certificate_id, cert.issue_date, cert.grade, cert.score_percentage,
+            SELECT cert.certificate_id, cert.issue_date, cert.created_at, cert.grade, cert.score_percentage,
                    c.title as course_title, c.code as course_code
             FROM certificates cert
             JOIN courses c ON c.id = cert.course_id
             WHERE cert.user_id = ?
-            ORDER BY cert.issue_date DESC
+            ORDER BY cert.issue_date DESC, cert.id DESC
         """, (user["id"],))
-        certificates = [dict(row) for row in cursor.fetchall()]
+        certificates = [enrich_certificate_timestamps(dict(row)) for row in cursor.fetchall()]
 
     return templates.TemplateResponse(request=request, name="trainee/profile.html", context={
         "request": request,
@@ -430,12 +430,15 @@ async def submit_assessment(request: Request, quiz_id: int):
                 cert_id = generate_certificate_id()
                 grade = calculate_grade(percentage)
                 v_url = f"/verify/certificate/{cert_id}"
-                qr_data = f"MoES/IMD CAPACITY CONNECT | Certificate ID: {cert_id} | Recipient: {user['full_name']} | Course ID: {course_id} | Score: {percentage}% | Grade: {grade} | Verified by MoES Training Directorate"
+                now_dt = datetime.now()
+                now_str = now_dt.strftime('%Y-%m-%d %H:%M:%S')
+                today_str = now_dt.strftime('%Y-%m-%d')
+                qr_data = f"MoES/IMD CAPACITY CONNECT | Certificate ID: {cert_id} | Recipient: {user['full_name']} | Course ID: {course_id} | Score: {percentage}% | Grade: {grade} | Issued: {now_str} IST | Verified by MoES Training Directorate"
                 
                 cursor.execute("""
-                    INSERT INTO certificates (certificate_id, user_id, course_id, issue_date, grade, score_percentage, qr_data, verification_url)
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-                """, (cert_id, user["id"], course_id, date.today().strftime('%Y-%m-%d'), grade, percentage, qr_data, v_url))
+                    INSERT INTO certificates (certificate_id, user_id, course_id, issue_date, grade, score_percentage, qr_data, verification_url, created_at)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                """, (cert_id, user["id"], course_id, today_str, grade, percentage, qr_data, v_url, now_str))
 
             # Mark course enrollment as 100% completed
             cursor.execute("""
@@ -484,7 +487,7 @@ def assessment_result_page(request: Request, attempt_id: int):
         # Certificate if available
         cursor.execute("SELECT * FROM certificates WHERE user_id = ? AND course_id = ?", (user["id"], attempt["course_id"]))
         cert_row = cursor.fetchone()
-        certificate = dict(cert_row) if cert_row else None
+        certificate = enrich_certificate_timestamps(dict(cert_row)) if cert_row else None
 
     return templates.TemplateResponse(request=request, name="trainee/assessment_result.html", context={
         "request": request,
@@ -515,7 +518,7 @@ def view_certificate(request: Request, cert_id: str):
         cert = cursor.fetchone()
         if not cert:
             raise HTTPException(status_code=404, detail="Certificate not found")
-        certificate = dict(cert)
+        certificate = enrich_certificate_timestamps(dict(cert))
 
     return templates.TemplateResponse(request=request, name="trainee/certificate.html", context={
         "request": request,

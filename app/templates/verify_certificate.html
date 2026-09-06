@@ -53,12 +53,12 @@
                     <strong class="text-slate-900 text-sm">{{ certificate.course_code }} ({{ certificate.course_domain }})</strong>
                 </div>
                 <div>
-                    <span class="text-slate-400 block font-medium">Issue Date</span>
-                    <strong class="text-slate-900">{{ certificate.issue_date }}</strong>
+                    <span class="text-slate-400 block font-medium">Issue Date & Time</span>
+                    <strong class="text-slate-900 text-sm">{{ certificate.formatted_date or certificate.issue_date }}{% if certificate.formatted_time %} at {{ certificate.formatted_time }}{% endif %}</strong>
                 </div>
                 <div>
                     <span class="text-slate-400 block font-medium">Grade & Assessment Score</span>
-                    <strong class="text-emerald-700 font-bold">{{ certificate.grade }} ({{ certificate.score_percentage }}%)</strong>
+                    <strong class="text-emerald-700 font-bold text-sm">{{ certificate.grade }} ({{ certificate.score_percentage }}%)</strong>
                 </div>
                 <div>
                     <span class="text-slate-400 block font-medium">Lead Instructor</span>
@@ -71,8 +71,9 @@
             </div>
 
             <div class="flex flex-wrap justify-between items-center gap-4 pt-4 border-t border-slate-100">
-                <div class="text-[11px] text-slate-400">
-                    Cryptographic Signature Validated &bull; Timestamped on Government Record
+                <div class="text-[11px] text-slate-500 font-mono">
+                    <span class="inline-block w-2 h-2 rounded-full bg-emerald-500 mr-1.5 animate-pulse"></span>
+                    Cryptographic Signature Validated &bull; Timestamped on Government Record: <strong class="text-slate-700">{{ certificate.formatted_timestamp or certificate.formatted_datetime or certificate.issue_date }}</strong>
                 </div>
                 <a href="/trainee/certificate/{{ certificate.certificate_id }}" class="px-5 py-2.5 bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold rounded-xl shadow transition flex items-center gap-2">
                     <i data-lucide="eye" class="w-4 h-4"></i> View Official Certificate Document

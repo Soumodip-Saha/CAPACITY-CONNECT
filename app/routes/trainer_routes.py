@@ -173,13 +173,106 @@ def manage_course_content(request: Request, course_id: int):
         cursor.execute("SELECT * FROM quizzes WHERE course_id = ?", (course_id,))
         quizzes = [dict(row) for row in cursor.fetchall()]
 
+        cursor.execute("SELECT DISTINCT domain FROM courses ORDER BY domain ASC")
+        domains = [row[0] for row in cursor.fetchall()]
+
+        cursor.execute("""
+            SELECT l.*, u.full_name as trainer_name
+            FROM trainer_library l
+            LEFT JOIN users u ON u.id = l.trainer_id
+            WHERE l.category = ? OR l.category = ?
+            ORDER BY l.created_at DESC
+        """, (course["domain"], course["code"]))
+        materials = [dict(row) for row in cursor.fetchall()]
+
     return templates.TemplateResponse(request=request, name="trainer/course_manage.html", context={
         "request": request,
         "user": user,
         "course": course,
         "modules": modules,
-        "quizzes": quizzes
+        "quizzes": quizzes,
+        "domains": domains,
+        "materials": materials,
+        "success": request.query_params.get("success"),
+        "error": request.query_params.get("error")
     })
+
+@router.post("/courses/{course_id}/materials/upload")
+async def upload_course_material(
+    request: Request,
+    course_id: int,
+    title: str = Form(...),
+    resource_type: str = Form("Technical Document"),
+    file_url: str = Form(""),
+    file_size: str = Form("10 MB"),
+    description: str = Form(""),
+    file: Optional[UploadFile] = File(None)
+):
+    user = require_auth(request, allowed_roles=["trainer", "admin"])
+    with get_db() as db:
+        cursor = db.cursor()
+        cursor.execute("SELECT domain, code FROM courses WHERE id = ?", (course_id,))
+        c = cursor.fetchone()
+        if not c:
+            raise HTTPException(status_code=404, detail="Course not found")
+        domain = c[0]
+        code = c[1]
+
+        final_url = file_url.strip()
+        final_size = file_size.strip() or "10 MB"
+
+        if file and file.filename:
+            import shutil
+            from pathlib import Path
+            upload_dir = Path("uploads/materials")
+            upload_dir.mkdir(parents=True, exist_ok=True)
+            clean_fname = f"{code}_{int(datetime.now().timestamp())}_{Path(file.filename).name.replace(' ', '_')}"
+            dest_path = upload_dir / clean_fname
+            with open(dest_path, "wb") as buffer:
+                shutil.copyfileobj(file.file, buffer)
+            final_url = f"/uploads/materials/{clean_fname}"
+            size_mb = dest_path.stat().st_size / (1024 * 1024)
+            final_size = f"{size_mb:.1f} MB" if size_mb >= 0.1 else f"{max(1, dest_path.stat().st_size // 1024)} KB"
+
+        if not final_url:
+            final_url = f"/static/docs/{domain.replace(' ', '_')}_Guide.pdf"
+
+        cursor.execute("""
+            INSERT INTO trainer_library (trainer_id, title, resource_type, category, file_url, file_size, description)
+            VALUES (?, ?, ?, ?, ?, ?, ?)
+        """, (user["id"], title.strip(), resource_type.strip(), domain, final_url, final_size, description.strip()))
+
+    return RedirectResponse(url=f"/trainer/courses/{course_id}/manage?success=Study+material+uploaded+successfully", status_code=303)
+
+@router.post("/courses/{course_id}/materials/{material_id}/delete")
+def delete_course_material(request: Request, course_id: int, material_id: int):
+    user = require_auth(request, allowed_roles=["trainer", "admin"])
+    with get_db() as db:
+        cursor = db.cursor()
+        cursor.execute("DELETE FROM trainer_library WHERE id = ?", (material_id,))
+
+    return RedirectResponse(url=f"/trainer/courses/{course_id}/manage?success=Material+deleted+successfully", status_code=303)
+
+@router.post("/courses/{course_id}/edit")
+def edit_course_details(
+    request: Request,
+    course_id: int,
+    title: str = Form(...),
+    domain: str = Form(...),
+    level: str = Form("Intermediate"),
+    duration_hours: int = Form(20),
+    description: str = Form(...)
+):
+    user = require_auth(request, allowed_roles=["trainer", "admin"])
+    with get_db() as db:
+        cursor = db.cursor()
+        cursor.execute("""
+            UPDATE courses
+            SET title = ?, domain = ?, level = ?, duration_hours = ?, description = ?
+            WHERE id = ?
+        """, (title.strip(), domain.strip(), level, duration_hours, description.strip(), course_id))
+
+    return RedirectResponse(url=f"/trainer/courses/{course_id}/manage?success=Course+details+updated+successfully", status_code=303)
 
 @router.post("/courses/{course_id}/modules/add")
 def add_module(request: Request, course_id: int, title: str = Form(...), summary: str = Form("")):
@@ -194,7 +287,36 @@ def add_module(request: Request, course_id: int, title: str = Form(...), summary
             VALUES (?, ?, ?, ?)
         """, (course_id, title.strip(), next_order, summary.strip()))
 
-    return RedirectResponse(url=f"/trainer/courses/{course_id}/manage", status_code=303)
+    return RedirectResponse(url=f"/trainer/courses/{course_id}/manage?success=Module+created+successfully", status_code=303)
+
+@router.post("/courses/{course_id}/modules/{module_id}/edit")
+def edit_module(
+    request: Request,
+    course_id: int,
+    module_id: int,
+    title: str = Form(...),
+    summary: str = Form("")
+):
+    user = require_auth(request, allowed_roles=["trainer", "admin"])
+    with get_db() as db:
+        cursor = db.cursor()
+        cursor.execute("""
+            UPDATE course_modules
+            SET title = ?, summary = ?
+            WHERE id = ? AND course_id = ?
+        """, (title.strip(), summary.strip(), module_id, course_id))
+
+    return RedirectResponse(url=f"/trainer/courses/{course_id}/manage?success=Module+updated+successfully", status_code=303)
+
+@router.post("/courses/{course_id}/modules/{module_id}/delete")
+def delete_module(request: Request, course_id: int, module_id: int):
+    user = require_auth(request, allowed_roles=["trainer", "admin"])
+    with get_db() as db:
+        cursor = db.cursor()
+        cursor.execute("DELETE FROM course_lessons WHERE module_id = ?", (module_id,))
+        cursor.execute("DELETE FROM course_modules WHERE id = ? AND course_id = ?", (module_id, course_id))
+
+    return RedirectResponse(url=f"/trainer/courses/{course_id}/manage?success=Module+deleted+successfully", status_code=303)
 
 @router.post("/courses/{course_id}/lessons/add")
 def add_lesson(
@@ -218,7 +340,38 @@ def add_lesson(
             VALUES (?, ?, ?, ?, ?, ?, ?, ?)
         """, (module_id, course_id, title.strip(), lesson_type, content_url.strip(), duration_mins, notes.strip(), next_order))
 
-    return RedirectResponse(url=f"/trainer/courses/{course_id}/manage", status_code=303)
+    return RedirectResponse(url=f"/trainer/courses/{course_id}/manage?success=Lesson+added+successfully", status_code=303)
+
+@router.post("/courses/{course_id}/lessons/{lesson_id}/edit")
+def edit_lesson(
+    request: Request,
+    course_id: int,
+    lesson_id: int,
+    title: str = Form(...),
+    lesson_type: str = Form("video"),
+    content_url: str = Form(""),
+    duration_mins: int = Form(20),
+    notes: str = Form("")
+):
+    user = require_auth(request, allowed_roles=["trainer", "admin"])
+    with get_db() as db:
+        cursor = db.cursor()
+        cursor.execute("""
+            UPDATE course_lessons
+            SET title = ?, lesson_type = ?, content_url = ?, duration_mins = ?, notes = ?
+            WHERE id = ? AND course_id = ?
+        """, (title.strip(), lesson_type, content_url.strip(), duration_mins, notes.strip(), lesson_id, course_id))
+
+    return RedirectResponse(url=f"/trainer/courses/{course_id}/manage?success=Lesson+updated+successfully", status_code=303)
+
+@router.post("/courses/{course_id}/lessons/{lesson_id}/delete")
+def delete_lesson(request: Request, course_id: int, lesson_id: int):
+    user = require_auth(request, allowed_roles=["trainer", "admin"])
+    with get_db() as db:
+        cursor = db.cursor()
+        cursor.execute("DELETE FROM course_lessons WHERE id = ? AND course_id = ?", (lesson_id, course_id))
+
+    return RedirectResponse(url=f"/trainer/courses/{course_id}/manage?success=Lesson+deleted+successfully", status_code=303)
 
 @router.get("/quiz/create", response_class=HTMLResponse)
 def create_quiz_page(request: Request, course_id: Optional[int] = None):

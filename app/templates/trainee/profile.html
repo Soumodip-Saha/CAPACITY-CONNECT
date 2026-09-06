@@ -102,6 +102,7 @@
                                 <div class="text-xs font-bold text-slate-900">{{ c.course_title }}</div>
                                 <div class="text-[11px] text-emerald-700 font-bold">Grade: {{ c.grade }} ({{ c.score_percentage }}%)</div>
                                 <div class="text-[10px] font-mono text-slate-400">{{ c.certificate_id }}</div>
+                                <div class="text-[10px] text-slate-400 font-medium">Issued: {{ c.formatted_date or c.issue_date }}{% if c.formatted_time %} • {{ c.formatted_time }}{% endif %}</div>
                                 <div class="pt-2">
                                     <a href="/trainee/certificate/{{ c.certificate_id }}" class="text-[11px] font-bold text-sky-600 hover:underline">
                                         View Certificate &rarr;

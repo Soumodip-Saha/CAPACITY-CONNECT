@@ -39,7 +39,10 @@ class UniversalRow:
     def __init__(self, values_list, columns_map):
         self._values = [
             float(v) if isinstance(v, Decimal) else
-            v.strftime("%Y-%m-%d %H:%M:%S") if isinstance(v, (datetime, date)) else
+            v.strftime("%Y-%m-%d %H:%M:%S") if type(v) is datetime else
+            v.strftime("%Y-%m-%d") if type(v) is date else
+            v.strftime("%Y-%m-%d %H:%M:%S") if isinstance(v, datetime) else
+            v.strftime("%Y-%m-%d") if isinstance(v, date) else
             v
             for v in values_list
         ]

@@ -266,6 +266,29 @@
                     {% endfor %}
                 </div>
             </div>
+
+            <!-- Study Materials & Manuals for Trainees -->
+            {% if resources %}
+                <div class="bg-white rounded-3xl p-6 border border-slate-200 shadow-sm space-y-4">
+                    <h3 class="font-bold text-slate-900 text-sm uppercase tracking-wider flex items-center justify-between">
+                        <span class="flex items-center gap-1.5"><i data-lucide="file-text" class="w-4 h-4 text-emerald-600"></i> Reference Materials</span>
+                        <span class="text-xs text-slate-400 font-normal">{{ resources|length }} Files</span>
+                    </h3>
+                    <div class="space-y-2">
+                        {% for res in resources %}
+                            <div class="p-3 bg-slate-50 hover:bg-slate-100 rounded-xl border border-slate-200 flex items-center justify-between text-xs transition">
+                                <div class="space-y-0.5 truncate pr-2">
+                                    <div class="font-bold text-slate-900 truncate">{{ res.title }}</div>
+                                    <div class="text-[10px] text-slate-500">{{ res.resource_type }} &bull; {{ res.file_size or 'PDF' }}</div>
+                                </div>
+                                <a href="{{ res.file_url or '/static/docs/Meteorology_Material.pdf' }}" target="_blank" class="px-2.5 py-1 bg-white hover:bg-slate-200 text-slate-700 font-bold rounded-lg border border-slate-200 shrink-0 flex items-center gap-1 text-[11px] shadow-sm">
+                                    <i data-lucide="download" class="w-3 h-3"></i> View
+                                </a>
+                            </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            {% endif %}
         </div>
     </div>
 </div>

@@ -36,10 +36,13 @@
             </div>
 
             {% if certificate %}
-                <div class="pt-2">
+                <div class="pt-2 space-y-2">
                     <a href="/trainee/certificate/{{ certificate.certificate_id }}" class="inline-flex items-center gap-2 px-8 py-3.5 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-slate-950 font-bold rounded-2xl shadow-xl shadow-amber-500/30 transition text-sm">
                         <i data-lucide="award" class="w-5 h-5"></i> View & Download MoES Digital Certificate
                     </a>
+                    <div class="text-[11px] text-slate-400 font-mono">
+                        Issued: {{ certificate.formatted_date or certificate.issue_date }}{% if certificate.formatted_time %} • {{ certificate.formatted_time }}{% endif %}
+                    </div>
                 </div>
             {% endif %}
 
